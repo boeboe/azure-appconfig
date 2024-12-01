@@ -124,7 +124,7 @@ function validate_inputs() {
   # Optional fields
   [[ -n "${INPUT_STRICT:-}" && "${INPUT_STRICT}" != "true" && "${INPUT_STRICT}" != "false" ]] && print_error "INPUT_STRICT must be either 'true' or 'false'. Provided: ${INPUT_STRICT}" && exit 1
   [[ -n "${INPUT_DEPTH:-}" && ! "${INPUT_DEPTH}" =~ ^[0-9]+$ ]] && print_error "INPUT_DEPTH must be a positive integer. Provided: ${INPUT_DEPTH}" && exit 1
-  if [[ -n "${INPUT_TAGS:-}" && ! $(echo "${INPUT_TAGS}" | jq . > /dev/null 2>&1) ]]; then
+  if [[ -n "${INPUT_TAGS:-}" ]] && ! echo "${INPUT_TAGS}" | jq . > /dev/null 2>&1 ; then
     print_error "INPUT_TAGS must be a valid JSON string. Provided: ${INPUT_TAGS}"
     exit 1
   fi
