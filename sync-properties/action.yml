@@ -1,0 +1,74 @@
+name: 'Azure App Configuration Sync'
+description: 'Azure App Configuration Sync of Properies using Azure CLI.'
+inputs:
+  configurationFile:
+    description: 'Path to the configuration file in the repo, relative to the repo root. Also supports glob patterns and multiple files'
+    required: true
+  format:
+    description: 'Format of the configuration file. Valid values are: json, yaml, properties'
+    required: true
+  connectionString:
+    description: 'Connection string for the App Configuration instance'
+    required: true
+  separator:
+    description: 'Separator used when flattening the configuration file to key-value pairs'
+    required: true
+  strict:
+    default: 'false'
+    description: 'Specifies whether to use a strict sync which will make the App Configuration instance exactly match the configuration file (deleting key-values not in the configuration file). Defaults to false'
+    required: false
+  prefix:
+    default: ''
+    description: 'Prefix that will be added to the front of the keys'
+    required: false
+  label:
+    default: ''
+    description: 'Label to use when setting the key-value pairs. If not specified, a null label will be used'
+    required: false
+  depth:
+    default: '0'
+    description: 'Max depth (positive number) for flattening the configuration file'
+    required: false
+  tags:
+    default: ''
+    description: 'Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }'
+    required: false
+  contentType:
+    default: 'application/vnd.microsoft.appconfig.keyvalue+json;charset=utf-8'
+    description: 'Content type associated with the values'
+    required: false    
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Script Path
+      run: echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts" >> $GITHUB_ENV
+      shell: bash
+    - name: Validate input
+      run: ${SCRIPTS_DIR}/sync-properties.sh --validate-inputs
+      shell: bash
+      env:
+        CONFIGURATION_FILE: ${{ inputs.configurationFile }}
+        FORMAT: ${{ inputs.format }}
+        CONNECTION_STRING: ${{ inputs.connectionString }}
+        SEPARATOR: ${{ inputs.separator }}
+        STRICT: ${{ inputs.strict }}
+        PREFIX: ${{ inputs.prefix }}
+        LABEL: ${{ inputs.label }}
+        DEPTH: ${{ inputs.depth }}
+        TAGS: ${{ inputs.tags }}
+        CONTENT_TYPE: ${{ inputs.contentType }}
+    - name: Import to App Configuration
+      run: ${SCRIPTS_DIR}/sync-properties.sh --perform-property-sync
+      shell: bash
+      env:
+        CONFIGURATION_FILE: ${{ inputs.configurationFile }}
+        FORMAT: ${{ inputs.format }}
+        CONNECTION_STRING: ${{ inputs.connectionString }}
+        SEPARATOR: ${{ inputs.separator }}
+        STRICT: ${{ inputs.strict }}
+        PREFIX: ${{ inputs.prefix }}
+        LABEL: ${{ inputs.label }}
+        DEPTH: ${{ inputs.depth }}
+        TAGS: ${{ inputs.tags }}
+        CONTENT_TYPE: ${{ inputs.contentType }}
