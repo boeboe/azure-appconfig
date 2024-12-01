@@ -129,6 +129,14 @@ function validate_inputs() {
     exit 1
   fi
 
+  # Conditional validation for INPUT_CONTENT_TYPE
+  if [[ "${INPUT_CONTENT_TYPE:-}" == "application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8" ]]; then
+    if [[ "${INPUT_FORMAT}" != "json" ]]; then
+      print_error "INPUT_CONTENT_TYPE 'application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8' requires INPUT_FORMAT to be 'json'. Provided: '${INPUT_FORMAT}'"
+      exit 1
+    fi
+  fi
+
   # Optional fields
   [[ -n "${INPUT_STRICT:-}" ]] && validate_boolean "INPUT_STRICT" "${INPUT_STRICT}"
   [[ -n "${INPUT_DEPTH:-}" ]] && validate_positive_integer "INPUT_DEPTH" "${INPUT_DEPTH}"
