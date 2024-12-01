@@ -42,7 +42,10 @@ runs:
         ls ${{ github.action_path }}
         echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts"
         ls ${{ github.action_path }}/../scripts
+        echo "GITHUB_WORKSPACE=${{ github.workspace }}"
+        ls ${{  github.workspace }}
       shell: bash
+
     - name: Setup Script Path
       run: echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts" >> $GITHUB_ENV
       shell: bash
