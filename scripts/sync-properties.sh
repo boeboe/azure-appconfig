@@ -5,7 +5,9 @@
 set -euo pipefail
 
 # Source the shared logging utilities
-source "$(dirname "$0")/logging.sh"
+echo "${SCRIPTS_DIR}/logging.sh"
+ls "${SCRIPTS_DIR}"
+source "${SCRIPTS_DIR}/logging.sh"
 
 # Usage message
 function usage() {
