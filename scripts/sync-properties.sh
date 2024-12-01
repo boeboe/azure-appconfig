@@ -9,122 +9,130 @@ source "$(dirname "$0")/logging.sh"
 
 # Usage message
 function usage() {
-  echo "Usage: $0 --validate-inputs | --perform-property-sync"
+  echo "Usage: $0 --validate-inputs | --perform-property-sync [ARGUMENTS]"
+  echo "Arguments:"
+  echo "  --configuration-file <file>"
+  echo "  --format <json|yaml|properties>"
+  echo "  --connection-string <string>"
+  echo "  --separator <separator>"
+  echo "  --strict <true|false>"
+  echo "  --prefix <prefix>"
+  echo "  --label <label>"
+  echo "  --depth <depth>"
+  echo "  --tags <tags>"
+  echo "  --content-type <contentType>"
   exit 1
 }
 
-# Validate input flag
-function validate_flag() {
-  if [[ $# -ne 1 ]]; then
-    log_error "No flag provided."
+# Parse arguments into variables
+function parse_arguments() {
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --configuration-file)
+        INPUT_CONFIGURATION_FILE="$2"
+        shift 2
+        ;;
+      --format)
+        INPUT_FORMAT="$2"
+        shift 2
+        ;;
+      --connection-string)
+        INPUT_CONNECTION_STRING="$2"
+        shift 2
+        ;;
+      --separator)
+        INPUT_SEPARATOR="$2"
+        shift 2
+        ;;
+      --strict)
+        INPUT_STRICT="$2"
+        shift 2
+        ;;
+      --prefix)
+        INPUT_PREFIX="$2"
+        shift 2
+        ;;
+      --label)
+        INPUT_LABEL="$2"
+        shift 2
+        ;;
+      --depth)
+        INPUT_DEPTH="$2"
+        shift 2
+        ;;
+      --tags)
+        INPUT_TAGS="$2"
+        shift 2
+        ;;
+      --content-type)
+        INPUT_CONTENT_TYPE="$2"
+        shift 2
+        ;;
+      --validate-inputs)
+        ACTION="validate_inputs"
+        shift
+        ;;
+      --perform-property-sync)
+        ACTION="perform_property_sync"
+        shift
+        ;;
+      *)
+        log_error "Unknown argument: $1"
+        usage
+        ;;
+    esac
+  done
+
+  # Ensure an action is specified
+  if [[ -z "${ACTION:-}" ]]; then
+    log_error "No action specified (e.g., --validate-inputs or --perform-property-sync)."
     usage
   fi
-
-  case "$1" in
-    --validate-inputs | --perform-property-sync)
-      # Valid flag
-      ;;
-    *)
-      log_error "Invalid flag: $1"
-      usage
-      ;;
-  esac
 }
 
-# Placeholder for validating inputs# validate_inputs
-# Description: Validates the required and optional environment variables passed to the script.
-# Ensures that all required inputs are provided, checks for valid formats, and performs basic 
-# type and format validation on optional inputs. Exits with an error if any validation fails.
-#
-# Validations performed:
-# - CONFIGURATION_FILE: Must be set and must exist (required).
-# - FORMAT: Must be one of the allowed values: json, yaml, properties (required).
-# - CONNECTION_STRING: Must be set (required).
-# - SEPARATOR: Must be set (required).
-# - STRICT: Must be either "true" or "false" (required, default is "false").
-# - PREFIX: Not explicitly validated as it's an optional string.
-# - LABEL: Not explicitly validated as it's an optional string.
-# - DEPTH: If provided, must be a positive integer.
-# - TAGS: If provided, must be a valid JSON string.
-# - CONTENT_TYPE: Not explicitly validated as it's an optional string.
-#
-# Logs an error and exits with code 1 if validation fails.
+# Function to validate inputs
 function validate_inputs() {
   log_info "Validating inputs..."
 
-  # Check if required inputs are set
-  if [[ -z "${CONFIGURATION_FILE:-}" ]]; then
-    log_error "CONFIGURATION_FILE is required but not set."
-    exit 1
-  elif [[ ! -f "${CONFIGURATION_FILE}" ]]; then
-    log_error "CONFIGURATION_FILE does not exist or is not accessible: ${CONFIGURATION_FILE}"
-    exit 1
-  fi
+  # Required fields
+  [[ -z "${INPUT_CONFIGURATION_FILE:-}" ]] && log_error "INPUT_CONFIGURATION_FILE is required but not set." && exit 1
+  [[ ! -f "${INPUT_CONFIGURATION_FILE}" ]] && log_error "INPUT_CONFIGURATION_FILE does not exist: ${INPUT_CONFIGURATION_FILE}" && exit 1
+  [[ -z "${INPUT_FORMAT:-}" ]] && log_error "INPUT_FORMAT is required but not set." && exit 1
+  [[ "${INPUT_FORMAT}" != "json" && "${INPUT_FORMAT}" != "yaml" && "${INPUT_FORMAT}" != "properties" ]] && log_error "INPUT_FORMAT must be one of: json, yaml, properties. Provided: ${INPUT_FORMAT}" && exit 1
+  [[ -z "${INPUT_CONNECTION_STRING:-}" ]] && log_error "INPUT_CONNECTION_STRING is required but not set." && exit 1
+  [[ -z "${INPUT_SEPARATOR:-}" ]] && log_error "INPUT_SEPARATOR is required but not set." && exit 1
 
-  if [[ -z "${FORMAT:-}" ]]; then
-    log_error "FORMAT is required but not set."
+  # Optional fields
+  [[ -n "${INPUT_STRICT:-}" && "${INPUT_STRICT}" != "true" && "${INPUT_STRICT}" != "false" ]] && log_error "INPUT_STRICT must be either 'true' or 'false'. Provided: ${INPUT_STRICT}" && exit 1
+  [[ -n "${INPUT_DEPTH:-}" && ! "${INPUT_DEPTH}" =~ ^[0-9]+$ ]] && log_error "INPUT_DEPTH must be a positive integer. Provided: ${INPUT_DEPTH}" && exit 1
+  if [[ -n "${INPUT_TAGS:-}" && ! $(echo "${INPUT_TAGS}" | jq . > /dev/null 2>&1) ]]; then
+    log_error "INPUT_TAGS must be a valid JSON string. Provided: ${INPUT_TAGS}"
     exit 1
-  elif [[ "${FORMAT}" != "json" && "${FORMAT}" != "yaml" && "${FORMAT}" != "properties" ]]; then
-    log_error "FORMAT must be one of: json, yaml, properties. Provided: ${FORMAT}"
-    exit 1
-  fi
-
-  if [[ -z "${CONNECTION_STRING:-}" ]]; then
-    log_error "CONNECTION_STRING is required but not set."
-    exit 1
-  fi
-
-  if [[ -z "${SEPARATOR:-}" ]]; then
-    log_error "SEPARATOR is required but not set."
-    exit 1
-  fi
-
-  if [[ -z "${STRICT:-}" ]]; then
-    STRICT="false"
-  elif [[ "${STRICT}" != "true" && "${STRICT}" != "false" ]]; then
-    log_error "STRICT must be either 'true' or 'false'. Provided: ${STRICT}"
-    exit 1
-  fi
-
-  # Optional inputs validation
-  if [[ -n "${DEPTH:-}" && ! "${DEPTH}" =~ ^[0-9]+$ ]]; then
-    log_error "DEPTH must be a positive number. Provided: ${DEPTH}"
-    exit 1
-  fi
-
-  if [[ -n "${TAGS:-}" ]]; then
-    if ! echo "${TAGS}" | jq . > /dev/null 2>&1; then
-      log_error "TAGS must be a valid JSON string. Provided: ${TAGS}"
-      exit 1
-    fi
   fi
 
   log_info "All inputs validated successfully."
 }
 
-# Function to print all environment variables relevant to this action
-function print_env_vars() {
-  local env_vars_message="Debugging environment variables for action 'sync-properties':\n"
-  env_vars_message+=" CONFIGURATION_FILE=${CONFIGURATION_FILE:-<not set>}\n"
-  env_vars_message+=" FORMAT=${FORMAT:-<not set>}\n"
-  env_vars_message+=" CONNECTION_STRING=${CONNECTION_STRING:-<not set>}\n"
-  env_vars_message+=" SEPARATOR=${SEPARATOR:-<not set>}\n"
-  env_vars_message+=" STRICT=${STRICT:-<not set>}\n"
-  env_vars_message+=" PREFIX=${PREFIX:-<not set>}\n"
-  env_vars_message+=" LABEL=${LABEL:-<not set>}\n"
-  env_vars_message+=" DEPTH=${DEPTH:-<not set>}\n"
-  env_vars_message+=" TAGS=${TAGS:-<not set>}\n"
-  env_vars_message+=" CONTENT_TYPE=${CONTENT_TYPE:-<not set>}\n"
-
-  print_info "$env_vars_message"
+# Function to print all parsed arguments
+function print_debug() {
+  log_info "Parsed arguments:"
+  log_info "  INPUT_CONFIGURATION_FILE=${INPUT_CONFIGURATION_FILE:-<not set>}"
+  log_info "  INPUT_FORMAT=${INPUT_FORMAT:-<not set>}"
+  log_info "  INPUT_CONNECTION_STRING=${INPUT_CONNECTION_STRING:-<not set>}"
+  log_info "  INPUT_SEPARATOR=${INPUT_SEPARATOR:-<not set>}"
+  log_info "  INPUT_STRICT=${INPUT_STRICT:-<not set>}"
+  log_info "  INPUT_PREFIX=${INPUT_PREFIX:-<not set>}"
+  log_info "  INPUT_LABEL=${INPUT_LABEL:-<not set>}"
+  log_info "  INPUT_DEPTH=${INPUT_DEPTH:-<not set>}"
+  log_info "  INPUT_TAGS=${INPUT_TAGS:-<not set>}"
+  log_info "  INPUT_CONTENT_TYPE=${INPUT_CONTENT_TYPE:-<not set>}"
 }
 
 # Placeholder for performing sync
 function perform_property_sync() {
   log_info "Performing property sync operation..."
-  
-  # Print all environment variables relevant to this action
-  print_env_vars
+  print_debug
+  # Implement the actual sync logic here
 }
 
 # Main script logic
@@ -134,20 +142,23 @@ function main() {
     usage
   fi
 
-  # Validate the flag
-  validate_flag "$1"
-  local flag="$1"
+  # Parse arguments
+  parse_arguments "$@"
 
-  # Call the appropriate function based on the flag
-  case "$flag" in
-    --validate-inputs)
+  # Perform action
+  case "$ACTION" in
+    validate_inputs)
       validate_inputs
       ;;
-    --perform-property-sync)
+    perform_property_sync)
       perform_property_sync
+      ;;
+    *)
+      log_error "Invalid action: $ACTION"
+      usage
       ;;
   esac
 }
 
-# Execute the main function with all script arguments
+# Execute the main function with all arguments
 main "$@"

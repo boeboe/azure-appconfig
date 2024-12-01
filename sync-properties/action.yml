@@ -14,29 +14,24 @@ inputs:
     description: 'Separator used when flattening the configuration file to key-value pairs'
     required: true
   strict:
-    default: 'false'
     description: 'Specifies whether to use a strict sync which will make the App Configuration instance exactly match the configuration file (deleting key-values not in the configuration file). Defaults to false'
     required: false
   prefix:
-    default: ''
     description: 'Prefix that will be added to the front of the keys'
     required: false
   label:
-    default: ''
     description: 'Label to use when setting the key-value pairs. If not specified, a null label will be used'
     required: false
   depth:
-    default: '0'
     description: 'Max depth (positive number) for flattening the configuration file'
     required: false
   tags:
-    default: ''
     description: 'Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }'
     required: false
   contentType:
-    default: 'application/vnd.microsoft.appconfig.keyvalue+json;charset=utf-8'
     description: 'Content type associated with the values'
     required: false    
+
 
 runs:
   using: "composite"
@@ -44,31 +39,26 @@ runs:
     - name: Setup Script Path
       run: echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts" >> $GITHUB_ENV
       shell: bash
-    - name: Validate input
-      run: ${SCRIPTS_DIR}/sync-properties.sh --validate-inputs
+
+    - name: Setup Script Args
+      run: |
+        echo "SCRIPTS_ARGS=\
+        --configuration-file '${{ inputs.configurationFile }}' \
+        --format '${{ inputs.format }}' \
+        --connection-string '${{ inputs.connectionString }}' \
+        --separator '${{ inputs.separator }}' \
+        --strict '${{ inputs.strict }}' \
+        --prefix '${{ inputs.prefix }}' \
+        --label '${{ inputs.label }}' \
+        --depth '${{ inputs.depth }}' \
+        --tags '${{ inputs.tags }}' \
+        --content-type '${{ inputs.contentType }}'" >> $GITHUB_ENV
       shell: bash
-      env:
-        CONFIGURATION_FILE: ${{ inputs.configurationFile }}
-        FORMAT: ${{ inputs.format }}
-        CONNECTION_STRING: ${{ inputs.connectionString }}
-        SEPARATOR: ${{ inputs.separator }}
-        STRICT: ${{ inputs.strict }}
-        PREFIX: ${{ inputs.prefix }}
-        LABEL: ${{ inputs.label }}
-        DEPTH: ${{ inputs.depth }}
-        TAGS: ${{ inputs.tags }}
-        CONTENT_TYPE: ${{ inputs.contentType }}
+
+    - name: Validate Inputs
+      run: ${SCRIPTS_DIR}/sync-properties.sh --validate-inputs ${SCRIPTS_ARGS}
+      shell: bash
+
     - name: Import to App Configuration
-      run: ${SCRIPTS_DIR}/sync-properties.sh --perform-property-sync
+      run: ${SCRIPTS_DIR}/sync-properties.sh --perform-property-sync ${SCRIPTS_ARGS}
       shell: bash
-      env:
-        CONFIGURATION_FILE: ${{ inputs.configurationFile }}
-        FORMAT: ${{ inputs.format }}
-        CONNECTION_STRING: ${{ inputs.connectionString }}
-        SEPARATOR: ${{ inputs.separator }}
-        STRICT: ${{ inputs.strict }}
-        PREFIX: ${{ inputs.prefix }}
-        LABEL: ${{ inputs.label }}
-        DEPTH: ${{ inputs.depth }}
-        TAGS: ${{ inputs.tags }}
-        CONTENT_TYPE: ${{ inputs.contentType }}
