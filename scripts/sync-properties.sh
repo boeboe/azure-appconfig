@@ -130,13 +130,38 @@ function validate_inputs() {
   print_success "All inputs validated successfully."
 }
 
-# Placeholder for performing sync
+# Function to perform the property sync operation
 function perform_property_sync() {
   print_info "Performing property sync operation..."
-  print_env_vars
-  # Implement the actual sync logic here
 
-  print_success "Property sync operation completed successfully."
+  # Build the az appconfig kv import command
+  local cmd=("az appconfig kv import")
+
+  # Required fields
+  cmd+=("--yes")
+  cmd+=("--source file")
+  cmd+=("--path '${INPUT_CONFIGURATION_FILE}'")
+  cmd+=("--format '${INPUT_FORMAT}'")
+  cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
+
+  # Optional fields
+  [[ -n "${INPUT_SEPARATOR:-}" ]] && cmd+=("--separator '${INPUT_SEPARATOR}'")
+  [[ -n "${INPUT_STRICT:-}" ]] && cmd+=("--strict '${INPUT_STRICT}'")
+  [[ -n "${INPUT_PREFIX:-}" ]] && cmd+=("--prefix '${INPUT_PREFIX}'")
+  [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
+  [[ -n "${INPUT_DEPTH:-}" ]] && cmd+=("--depth '${INPUT_DEPTH}'")
+  [[ -n "${INPUT_CONTENT_TYPE:-}" ]] && cmd+=("--content-type '${INPUT_CONTENT_TYPE}'")
+
+  # Execute the command
+  print_command "Executing: ${cmd[*]}"
+  eval "${cmd[*]}"
+
+  if [[ $? -eq 0 ]]; then
+    print_success "Property sync operation completed successfully."
+  else
+    print_error "Property sync operation failed."
+    exit 1
+  fi
 }
 
 # Main script logic
