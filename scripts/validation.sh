@@ -3,9 +3,6 @@
 # shellcheck disable=SC1091
 # A collection of generic validation functions for reusable input validation.
 
-# Source the shared logging utilities
-source "${SCRIPTS_DIR}/logging.sh"
-
 # Ensure a parameter is set
 function validate_set() {
   local param_name="${1}"
