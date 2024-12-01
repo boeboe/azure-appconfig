@@ -50,7 +50,7 @@ runs:
         --prefix '${{ inputs.prefix }}' \
         --label '${{ inputs.label }}' \
         --depth '${{ inputs.depth }}' \
-        --tags '\\"${{ inputs.tags }}\\"' \
+        --tags '${{ inputs.tags }}' \
         --content-type '${{ inputs.contentType }}'" >> $GITHUB_ENV
       shell: bash
 
