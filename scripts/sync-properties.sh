@@ -120,7 +120,14 @@ function validate_inputs() {
   validate_set "INPUT_FORMAT" "${INPUT_FORMAT:-}"
   validate_enum "INPUT_FORMAT" "${INPUT_FORMAT}" "json" "yaml" "properties"
   validate_set "INPUT_CONNECTION_STRING" "${INPUT_CONNECTION_STRING:-}"
-  validate_set "INPUT_SEPARATOR" "${INPUT_SEPARATOR:-}"
+
+  # Conditional validation for INPUT_SEPARATOR
+  if [[ "${INPUT_FORMAT}" == "json" || "${INPUT_FORMAT}" == "yaml" ]]; then
+    validate_set "INPUT_SEPARATOR" "${INPUT_SEPARATOR:-}"
+  elif [[ "${INPUT_FORMAT}" == "properties" && -n "${INPUT_SEPARATOR:-}" ]]; then
+    print_error "INPUT_SEPARATOR is not valid for 'properties' format."
+    exit 1
+  fi
 
   # Optional fields
   [[ -n "${INPUT_STRICT:-}" ]] && validate_boolean "INPUT_STRICT" "${INPUT_STRICT}"
