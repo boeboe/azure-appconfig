@@ -96,6 +96,10 @@ function parse_arguments() {
 function validate_inputs() {
   print_info "Validating inputs..."
 
+  print_info "Checking if required tools are installed..."
+  which jq
+  print_success "All required tools are installed."
+
   # Required fields
   [[ -z "${INPUT_CONFIGURATION_FILE:-}" ]] && print_error "INPUT_CONFIGURATION_FILE is required but not set." && exit 1
   [[ ! -f "${INPUT_CONFIGURATION_FILE}" ]] && print_error "INPUT_CONFIGURATION_FILE does not exist: ${INPUT_CONFIGURATION_FILE}" && exit 1
