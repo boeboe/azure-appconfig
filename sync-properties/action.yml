@@ -63,9 +63,9 @@ runs:
       shell: bash
 
     - name: Validate Inputs
-      run: ${SCRIPTS_DIR}/sync-properties.sh --validate-inputs ${SCRIPTS_ARGS}
+      run: ${{ env.SCRIPTS_DIR }}/sync-properties.sh --validate-inputs ${{ env.SCRIPTS_ARGS }}
       shell: bash
 
     - name: Import to App Configuration
-      run: ${SCRIPTS_DIR}/sync-properties.sh --perform-property-sync ${SCRIPTS_ARGS}
+      run: ${{ env.SCRIPTS_DIR }}/sync-properties.sh --perform-property-sync ${{ env.SCRIPTS_ARGS }}
       shell: bash
