@@ -1,37 +1,36 @@
-name: 'Azure App Configuration Sync'
-description: 'Azure App Configuration Sync of Properies using Azure CLI.'
+name: "Azure App Configuration Sync"
+description: "Azure App Configuration Sync of Properies using Azure CLI."
 inputs:
   configurationFile:
-    description: 'Path to the configuration file in the repo, relative to the repo root. Also supports glob patterns and multiple files'
+    description: "Path to the configuration file in the repo, relative to the repo root. Also supports glob patterns and multiple files"
     required: true
   format:
-    description: 'Format of the configuration file. Valid values are: json, yaml, properties'
+    description: "Format of the configuration file. Valid values are: json, yaml, properties"
     required: true
   connectionString:
-    description: 'Connection string for the App Configuration instance'
+    description: "Connection string for the App Configuration instance"
     required: true
   separator:
-    description: 'Separator used when flattening the configuration file to key-value pairs'
+    description: "Separator used when flattening the configuration file to key-value pairs"
     required: true
   strict:
-    description: 'Specifies whether to use a strict sync which will make the App Configuration instance exactly match the configuration file (deleting key-values not in the configuration file). Defaults to false'
+    description: "Specifies whether to use a strict sync which will make the App Configuration instance exactly match the configuration file (deleting key-values not in the configuration file). Defaults to false"
     required: false
   prefix:
-    description: 'Prefix that will be added to the front of the keys'
+    description: "Prefix that will be added to the front of the keys"
     required: false
   label:
-    description: 'Label to use when setting the key-value pairs. If not specified, a null label will be used'
+    description: "Label to use when setting the key-value pairs. If not specified, a null label will be used"
     required: false
   depth:
-    description: 'Max depth (positive number) for flattening the configuration file'
+    description: "Max depth (positive number) for flattening the configuration file"
     required: false
   tags:
-    description: 'Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }'
+    description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
     required: false
   contentType:
-    description: 'Content type associated with the values'
-    required: false    
-
+    description: "Content type associated with the values"
+    required: false
 
 runs:
   using: "composite"
@@ -51,7 +50,7 @@ runs:
         --prefix '${{ inputs.prefix }}' \
         --label '${{ inputs.label }}' \
         --depth '${{ inputs.depth }}' \
-        --tags '${{ inputs.tags }}' \
+        --tags '\\"${{ inputs.tags }}\\"' \
         --content-type '${{ inputs.contentType }}'" >> $GITHUB_ENV
       shell: bash
 
