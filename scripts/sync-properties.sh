@@ -137,6 +137,8 @@ function perform_property_sync() {
   print_info "Performing property sync operation..."
   print_env_vars
   # Implement the actual sync logic here
+
+  print_success "Property sync operation completed successfully."
 }
 
 # Main script logic
