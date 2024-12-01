@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
+# logging.sh
 # shellcheck disable=SC2034
+# Scxript to define logging utilities
 
 # Colors
 readonly END="\033[0m" ;
