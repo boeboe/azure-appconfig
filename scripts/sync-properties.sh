@@ -92,13 +92,26 @@ function parse_arguments() {
   fi
 }
 
+# Function to print all parsed arguments
+function print_env_vars() {
+  local env_vars_message="Debugging environment variables for action:\n"
+  env_vars_message+="  INPUT_CONFIGURATION_FILE=${INPUT_CONFIGURATION_FILE:-<not set>}\n"
+  env_vars_message+="  INPUT_FORMAT=${INPUT_FORMAT:-<not set>}\n"
+  env_vars_message+="  INPUT_CONNECTION_STRING=${INPUT_CONNECTION_STRING:-<not set>}\n"
+  env_vars_message+="  INPUT_SEPARATOR=${INPUT_SEPARATOR:-<not set>}\n"
+  env_vars_message+="  INPUT_STRICT=${INPUT_STRICT:-<not set>}\n"
+  env_vars_message+="  INPUT_PREFIX=${INPUT_PREFIX:-<not set>}\n"
+  env_vars_message+="  INPUT_LABEL=${INPUT_LABEL:-<not set>}\n"
+  env_vars_message+="  INPUT_DEPTH=${INPUT_DEPTH:-<not set>}\n"
+  env_vars_message+="  INPUT_TAGS=${INPUT_TAGS:-<not set>}\n"
+  env_vars_message+="  INPUT_CONTENT_TYPE=${INPUT_CONTENT_TYPE:-<not set>}\n"
+  print_info "$env_vars_message"
+}
+
 # Function to validate inputs
 function validate_inputs() {
   print_info "Validating inputs..."
-
-  print_info "Checking if required tools are installed..."
-  which jq
-  print_success "All required tools are installed."
+  print_env_vars
 
   # Required fields
   [[ -z "${INPUT_CONFIGURATION_FILE:-}" ]] && print_error "INPUT_CONFIGURATION_FILE is required but not set." && exit 1
@@ -117,22 +130,6 @@ function validate_inputs() {
   fi
 
   print_success "All inputs validated successfully."
-}
-
-# Function to print all parsed arguments
-function print_env_vars() {
-  local env_vars_message="Debugging environment variables for action:\n"
-  env_vars_message+="  INPUT_CONFIGURATION_FILE=${INPUT_CONFIGURATION_FILE:-<not set>}\n"
-  env_vars_message+="  INPUT_FORMAT=${INPUT_FORMAT:-<not set>}\n"
-  env_vars_message+="  INPUT_CONNECTION_STRING=${INPUT_CONNECTION_STRING:-<not set>}\n"
-  env_vars_message+="  INPUT_SEPARATOR=${INPUT_SEPARATOR:-<not set>}\n"
-  env_vars_message+="  INPUT_STRICT=${INPUT_STRICT:-<not set>}\n"
-  env_vars_message+="  INPUT_PREFIX=${INPUT_PREFIX:-<not set>}\n"
-  env_vars_message+="  INPUT_LABEL=${INPUT_LABEL:-<not set>}\n"
-  env_vars_message+="  INPUT_DEPTH=${INPUT_DEPTH:-<not set>}\n"
-  env_vars_message+="  INPUT_TAGS=${INPUT_TAGS:-<not set>}\n"
-  env_vars_message+="  INPUT_CONTENT_TYPE=${INPUT_CONTENT_TYPE:-<not set>}\n"
-  print_info "$env_vars_message"
 }
 
 # Placeholder for performing sync
