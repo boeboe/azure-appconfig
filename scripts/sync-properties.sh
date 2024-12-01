@@ -5,8 +5,9 @@
 
 set -euo pipefail
 
-# Source the shared logging utilities
+# Source the shared logging and validation utilities
 source "${SCRIPTS_DIR}/logging.sh"
+source "${SCRIPTS_DIR}/validation.sh"
 
 # Usage message
 function usage() {
