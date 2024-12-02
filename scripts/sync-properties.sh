@@ -231,6 +231,10 @@ function perform_property_sync() {
     exit 1
   }
 
+  print_info "---------------"
+  print_info "${desired_properties}"
+  print_info "---------------"
+
   # Step 2: Fetch existing properties
   print_info "Fetching current properties from Azure App Configuration..."
   local existing_properties
