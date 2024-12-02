@@ -154,7 +154,7 @@ function get_current_az_properties() {
   cmd+=("--fields key value tags --output json")
 
   local output
-  print_command "$cmd"
+  print_command "${cmd[*]}"
   output=$(eval "${cmd[*]}") || {
     print_error "Failed to fetch current Azure properties."
     exit 1
