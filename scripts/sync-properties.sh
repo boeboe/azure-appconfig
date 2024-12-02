@@ -131,11 +131,7 @@ function validate_inputs() {
   fi
 
   # Validation for INPUT_CONTENT_TYPE
-  validate_enum "INPUT_CONTENT_TYPE" "${INPUT_CONTENT_TYPE:-keyvalue}" "keyvalue" "keyvaultref" "featureflag"
-  if [[ "${INPUT_CONTENT_TYPE}" =~ ^(keyvaultref|featureflag)$ && "${INPUT_FORMAT}" != "json" ]]; then
-    print_error "INPUT_CONTENT_TYPE '${INPUT_CONTENT_TYPE}' requires INPUT_FORMAT to be 'json'. Provided: '${INPUT_FORMAT}'"
-    exit 1
-  fi
+  validate_enum "INPUT_CONTENT_TYPE" "${INPUT_CONTENT_TYPE:-keyvalue}" "keyvalue" "keyvaultref"
 
   # Optional fields
   [[ -n "${INPUT_STRICT:-}" ]] && validate_boolean "INPUT_STRICT" "${INPUT_STRICT}"
