@@ -269,8 +269,6 @@ function perform_property_sync() {
     print_error "Failed to parse input file: ${INPUT_CONFIGURATION_FILE}"
     exit 1
   }
-  print_info "desired_properties: ${desired_properties}"
-
 
   # Step 2: Fetch existing properties
   print_info "Fetching current properties from Azure App Configuration..."
@@ -279,7 +277,6 @@ function perform_property_sync() {
     print_error "Failed to fetch existing Azure properties."
     exit 1
   }
-  print_info "existing_properties: ${existing_properties}"
 
   # Step 3: Handle strict mode
   if [[ "${INPUT_STRICT:-false}" == "true" ]]; then
@@ -288,8 +285,6 @@ function perform_property_sync() {
       print_error "Failed to determine keys to delete."
       exit 1
     }
-    print_info "to_delete: ${to_delete}"
-
     delete_current_az_properties "${to_delete}" || {
       print_error "Failed to delete keys in strict mode."
       exit 1
