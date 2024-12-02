@@ -184,6 +184,19 @@ function delete_current_az_properties() {
   done
 }
 
+# Function to log keys that are left untouched
+function keep_current_az_properties() {
+  local common_equal="$1"
+
+  print_info "Keeping existing keys unchanged in Azure App Configuration..."
+  echo "${common_equal}" | jq -c '.entries[]' | while read -r entry; do
+    local key
+    key=$(echo "${entry}" | jq -r '.key')
+
+    print_info "Key remains unchanged: ${key}"
+  done
+}
+
 # Function to update existing keys in Azure App Configuration
 function update_current_az_properties() {
   local to_update="$1"
@@ -295,6 +308,9 @@ function perform_property_sync() {
     print_error "Failed to determine added keys."
     exit 1
   }
+
+  # Log untouched keys
+  keep_current_az_properties "${common_equal}"
 
   # Update and create keys
   update_current_az_properties "${common_changed}" || {
