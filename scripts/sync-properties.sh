@@ -7,6 +7,8 @@ set -euo pipefail
 # Source the shared logging and validation utilities
 source "${SCRIPTS_DIR}/logging.sh"
 source "${SCRIPTS_DIR}/validation.sh"
+source "${SCRIPTS_DIR}/parsing.sh"
+source "${SCRIPTS_DIR}/json.sh"
 
 # Usage message
 function usage() {
