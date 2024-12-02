@@ -5,11 +5,18 @@
 function validate_json_entries() {
   local json="$1"
 
+  # Check if the 'entries' key exists and is an array
   if ! echo "${json}" | jq -e '.entries | type == "array"' &>/dev/null; then
     print_error "Invalid JSON format: 'entries' key must exist and be an array."
     exit 1
   fi
 
+  # If the 'entries' array is empty, it's still valid
+  if [[ "$(echo "${json}" | jq '.entries | length')" -eq 0 ]]; then
+    return 0
+  fi
+
+  # Validate that each entry in the array contains 'key', 'value', and 'description'
   if ! echo "${json}" | jq -e '.entries[] | has("key") and has("value") and has("description")' &>/dev/null; then
     print_error "Invalid JSON format: Each entry must contain 'key', 'value', and 'description'."
     exit 1
@@ -21,9 +28,22 @@ function get_deleted_keys() {
   local original="$1"
   local new="$2"
 
+  # Validate JSON structure
   validate_json_entries "${original}"
   validate_json_entries "${new}"
 
+  # Handle empty entries explicitly
+  if [[ "$(echo "${original}" | jq '.entries | length')" -eq 0 ]]; then
+    echo '{"entries":[]}' | jq -c
+    return
+  fi
+
+  if [[ "$(echo "${new}" | jq '.entries | length')" -eq 0 ]]; then
+    echo "${original}" | jq -c
+    return
+  fi
+
+  # Calculate deleted keys
   local deleted
   deleted=$(jq -n \
     --argjson original "$(echo "${original}" | jq '.entries')" \
@@ -43,6 +63,12 @@ function get_common_keys_equal() {
 
   validate_json_entries "${original}"
   validate_json_entries "${new}"
+
+  # Handle empty cases
+  if [[ "$(echo "${original}" | jq '.entries | length')" -eq 0 || "$(echo "${new}" | jq '.entries | length')" -eq 0 ]]; then
+    echo '{"entries":[]}' | jq -c
+    return
+  fi
 
   local common_equal
   common_equal=$(jq -n \
@@ -64,6 +90,12 @@ function get_common_keys_changed() {
   validate_json_entries "${original}"
   validate_json_entries "${new}"
 
+  # Handle empty cases
+  if [[ "$(echo "${original}" | jq '.entries | length')" -eq 0 || "$(echo "${new}" | jq '.entries | length')" -eq 0 ]]; then
+    echo '{"entries":[]}' | jq -c
+    return
+  fi
+
   local common_changed
   common_changed=$(jq -n \
     --argjson original "$(echo "${original}" | jq '.entries')" \
@@ -83,6 +115,17 @@ function get_added_keys() {
 
   validate_json_entries "${original}"
   validate_json_entries "${new}"
+
+  # Handle empty cases
+  if [[ "$(echo "${new}" | jq '.entries | length')" -eq 0 ]]; then
+    echo '{"entries":[]}' | jq -c
+    return
+  fi
+
+  if [[ "$(echo "${original}" | jq '.entries | length')" -eq 0 ]]; then
+    echo "${new}" | jq -c
+    return
+  fi
 
   local added
   added=$(jq -n \

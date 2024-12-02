@@ -145,11 +145,11 @@ function validate_inputs() {
   print_success "All inputs validated successfully."
 }
 
-# Function to fetch current Azure properties
+# Function to fetch current Azure properties (do not forget the wildcard for prefix filtering with --key)
 function get_current_az_properties() {
   local cmd=("az appconfig kv list")
   cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
-  [[ -n "${INPUT_PREFIX:-}" ]] && cmd+=("--key '${INPUT_PREFIX}'")
+  [[ -n "${INPUT_PREFIX:-}" ]] && cmd+=("--key '${INPUT_PREFIX}*'")
   [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
   cmd+=("--fields key value tags --output json")
 
