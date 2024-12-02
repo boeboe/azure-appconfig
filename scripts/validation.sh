@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# validation.sh
+# validation.sh - Functions to validate input parameters.
 # shellcheck disable=SC1091
-# A collection of generic validation functions for reusable input validation.
 
 # Ensure a parameter is set
 function validate_set() {

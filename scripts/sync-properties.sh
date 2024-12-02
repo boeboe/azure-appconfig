@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# sync-properties.sh
+# sync-properties.sh - Script to validate inputs and perform sync operations for Azure App Configuration
 # shellcheck disable=SC1091
-# Script to validate inputs and perform sync operations for Azure App Configuration
 
 set -euo pipefail
 
