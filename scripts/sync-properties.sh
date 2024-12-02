@@ -167,9 +167,6 @@ function delete_current_az_properties() {
     local key
     key=$(echo "${entry}" | jq -r '.key')
 
-    # Apply prefix if defined
-    [[ -n "${INPUT_PREFIX:-}" ]] && key="${INPUT_PREFIX}${key}"
-
     local cmd=("az appconfig kv delete")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
@@ -208,9 +205,6 @@ function update_current_az_properties() {
     value=$(echo "${entry}" | jq -r '.value')
     description=$(echo "${entry}" | jq -r '.description')
 
-    # Apply prefix if defined
-    [[ -n "${INPUT_PREFIX:-}" ]] && key="${INPUT_PREFIX}${key}"
-
     local cmd=("az appconfig kv set")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
@@ -238,9 +232,6 @@ function create_new_az_properties() {
     key=$(echo "${entry}" | jq -r '.key')
     value=$(echo "${entry}" | jq -r '.value')
     description=$(echo "${entry}" | jq -r '.description')
-
-    # Apply prefix if defined
-    [[ -n "${INPUT_PREFIX:-}" ]] && key="${INPUT_PREFIX}${key}"
 
     local cmd=("az appconfig kv set")
     cmd+=("--yes")
