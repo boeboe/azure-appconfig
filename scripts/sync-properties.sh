@@ -231,7 +231,7 @@ function perform_property_sync() {
     exit 1
   }
 
-  print_info "---------------"
+  print_info "-------desired_properties--------"
   print_info "${desired_properties}"
   print_info "---------------"
 
@@ -242,6 +242,10 @@ function perform_property_sync() {
     print_error "Failed to fetch existing Azure properties."
     exit 1
   }
+
+  print_info "-------existing_properties--------"
+  print_info "${existing_properties}"
+  print_info "---------------"
 
   # Step 3: Handle strict mode
   if [[ "${INPUT_STRICT:-false}" == "true" ]]; then
