@@ -29,7 +29,7 @@ inputs:
     description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
     required: false
   contentType:
-    description: "Content type for the values. Valid values are: 'keyvalue' (default), 'keyvaultref', 'featureflag'."
+    description: "Content type for the values. Valid values are: 'keyvalue' (default) or 'keyvaultref'"
     required: false
     default: "keyvalue"
 

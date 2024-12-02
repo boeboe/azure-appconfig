@@ -143,44 +143,143 @@ function validate_inputs() {
   print_success "All inputs validated successfully."
 }
 
-# Function to perform the property sync operation
-function perform_property_sync() {
-  print_info "Performing property sync operation..."
-
-  # Build the az appconfig kv import command
-  local cmd=("az appconfig kv import")
-
-  # Required fields
-  cmd+=("--yes")
-  cmd+=("--source file")
-  cmd+=("--path '${INPUT_CONFIGURATION_FILE}'")
-  cmd+=("--format '${INPUT_FORMAT}'")
+# Function to fetch current Azure properties
+function get_current_az_properties() {
+  local cmd=("az appconfig kv list")
   cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
-
-  # Optional fields
-  [[ -n "${INPUT_SEPARATOR:-}" ]] && cmd+=("--separator '${INPUT_SEPARATOR}'")
-  [[ -n "${INPUT_STRICT:-}" ]] && cmd+=("--strict '${INPUT_STRICT}'")
-  [[ -n "${INPUT_PREFIX:-}" ]] && cmd+=("--prefix '${INPUT_PREFIX}'")
+  [[ -n "${INPUT_PREFIX:-}" ]] && cmd+=("--key '${INPUT_PREFIX}'")
   [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
-  [[ -n "${INPUT_DEPTH:-}" ]] && cmd+=("--depth '${INPUT_DEPTH}'")
+  cmd+=("--fields key value tags --output json")
 
-  # Set content type if INPUT_CONTENT_TYPE is 'keyvaultref' or 'featureflag'
-  if [[ "${INPUT_CONTENT_TYPE}" == "keyvaultref" ]]; then
-    cmd+=("--content-type 'application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8'")
-  elif [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
-    cmd+=("--content-type 'application/vnd.microsoft.appconfig.ff+json;charset=utf-8'")
-  fi
-
-  # Execute the command
-  print_command "Executing: ${cmd[*]}"
-  eval "${cmd[*]}"
-
-  if [[ $? -eq 0 ]]; then
-    print_success "Property sync operation completed successfully."
-  else
-    print_error "Property sync operation failed."
+  local output
+  output=$(eval "${cmd[*]}") || {
+    print_error "Failed to fetch current Azure properties."
     exit 1
+  }
+
+  parse_az_kv_properties "${output}"
+}
+
+# Function to delete keys from Azure App Configuration
+function delete_current_az_properties() {
+  local to_delete="$1"
+
+  print_info "Deleting keys from Azure App Configuration..."
+  echo "${to_delete}" | jq -c '.entries[]' | while read -r entry; do
+    local key
+    key=$(echo "${entry}" | jq -r '.key')
+    az appconfig kv delete --yes --connection-string "${INPUT_CONNECTION_STRING}" --key "${key}" || {
+      print_error "Failed to delete key: ${key}"
+      return 1
+    }
+    print_success "Deleted key: ${key}"
+  done
+}
+
+# Function to update existing keys in Azure App Configuration
+function update_current_az_properties() {
+  local to_update="$1"
+
+  print_info "Updating keys in Azure App Configuration..."
+  echo "${to_update}" | jq -c '.entries[]' | while read -r entry; do
+    local key value description
+    key=$(echo "${entry}" | jq -r '.key')
+    value=$(echo "${entry}" | jq -r '.value')
+    description=$(echo "${entry}" | jq -r '.description')
+
+    az appconfig kv set --yes --connection-string "${INPUT_CONNECTION_STRING}" \
+      --key "${key}" --value "${value}" --tags "description=${description}" || {
+      print_error "Failed to update key: ${key}"
+      return 1
+    }
+    print_success "Updated key: ${key}"
+  done
+}
+
+# Function to create new keys in Azure App Configuration
+function create_new_az_properties() {
+  local to_create="$1"
+
+  print_info "Creating new keys in Azure App Configuration..."
+  echo "${to_create}" | jq -c '.entries[]' | while read -r entry; do
+    local key value description
+    key=$(echo "${entry}" | jq -r '.key')
+    value=$(echo "${entry}" | jq -r '.value')
+    description=$(echo "${entry}" | jq -r '.description')
+
+    az appconfig kv set --yes --connection-string "${INPUT_CONNECTION_STRING}" \
+      --key "${key}" --value "${value}" \
+      --tags "description=${description}" \
+      ${INPUT_CONTENT_TYPE:+--content-type "${INPUT_CONTENT_TYPE}"} || {
+      print_error "Failed to create key: ${key}"
+      return 1
+    }
+    print_success "Created key: ${key}"
+  done
+}
+
+# Main function to perform property sync
+function perform_property_sync() {
+  print_info "Starting property sync operation..."
+
+  # Step 1: Parse the input file
+  local desired_properties
+  desired_properties=$(parse_properties_file "${INPUT_CONFIGURATION_FILE}") || {
+    print_error "Failed to parse input file: ${INPUT_CONFIGURATION_FILE}"
+    exit 1
+  }
+
+  # Step 2: Fetch existing properties
+  print_info "Fetching current properties from Azure App Configuration..."
+  local existing_properties
+  existing_properties=$(get_current_az_properties) || {
+    print_error "Failed to fetch existing Azure properties."
+    exit 1
+  }
+
+  # Step 3: Handle strict mode
+  if [[ "${INPUT_STRICT:-false}" == "true" ]]; then
+    local to_delete
+    to_delete=$(get_deleted_keys "${existing_properties}" "${desired_properties}") || {
+      print_error "Failed to determine keys to delete."
+      exit 1
+    }
+
+    delete_current_az_properties "${to_delete}" || {
+      print_error "Failed to delete keys in strict mode."
+      exit 1
+    }
   fi
+
+  # Step 4: Compare and sync properties
+  local common_equal common_changed added
+  common_equal=$(get_common_keys_equal "${existing_properties}" "${desired_properties}") || {
+    print_error "Failed to determine common equal keys."
+    exit 1
+  }
+
+  common_changed=$(get_common_keys_changed "${existing_properties}" "${desired_properties}") || {
+    print_error "Failed to determine common changed keys."
+    exit 1
+  }
+
+  added=$(get_added_keys "${existing_properties}" "${desired_properties}") || {
+    print_error "Failed to determine added keys."
+    exit 1
+  }
+
+  # Update and create keys
+  update_current_az_properties "${common_changed}" || {
+    print_error "Failed to update existing keys."
+    exit 1
+  }
+
+  create_new_az_properties "${added}" || {
+    print_error "Failed to create new keys."
+    exit 1
+  }
+
+  print_success "Property sync operation completed successfully."
 }
 
 # Main script logic
