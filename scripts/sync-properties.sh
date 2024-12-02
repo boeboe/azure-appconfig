@@ -129,12 +129,11 @@ function validate_inputs() {
     exit 1
   fi
 
-  # Conditional validation for INPUT_CONTENT_TYPE
-  if [[ "${INPUT_CONTENT_TYPE:-}" == "application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8" ]]; then
-    if [[ "${INPUT_FORMAT}" != "json" ]]; then
-      print_error "INPUT_CONTENT_TYPE 'application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8' requires INPUT_FORMAT to be 'json'. Provided: '${INPUT_FORMAT}'"
-      exit 1
-    fi
+  # Validation for INPUT_CONTENT_TYPE
+  validate_enum "INPUT_CONTENT_TYPE" "${INPUT_CONTENT_TYPE:-keyvalue}" "keyvalue" "keyvaultref" "featureflag"
+  if [[ "${INPUT_CONTENT_TYPE}" =~ ^(keyvalue|featureflag)$ && "${INPUT_FORMAT}" != "json" ]]; then
+    print_error "INPUT_CONTENT_TYPE '${INPUT_CONTENT_TYPE}' requires INPUT_FORMAT to be 'json'. Provided: '${INPUT_FORMAT}'"
+    exit 1
   fi
 
   # Optional fields
@@ -165,7 +164,13 @@ function perform_property_sync() {
   [[ -n "${INPUT_PREFIX:-}" ]] && cmd+=("--prefix '${INPUT_PREFIX}'")
   [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
   [[ -n "${INPUT_DEPTH:-}" ]] && cmd+=("--depth '${INPUT_DEPTH}'")
-  [[ -n "${INPUT_CONTENT_TYPE:-}" ]] && cmd+=("--content-type '${INPUT_CONTENT_TYPE}'")
+
+  # Set content type if INPUT_CONTENT_TYPE is 'keyvaultref' or 'featureflag'
+  if [[ "${INPUT_CONTENT_TYPE}" == "keyvaultref" ]]; then
+    cmd+=("--content-type 'application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8'")
+  elif [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+    cmd+=("--content-type 'application/vnd.microsoft.appconfig.ff+json;charset=utf-8'")
+  fi
 
   # Execute the command
   print_command "Executing: ${cmd[*]}"

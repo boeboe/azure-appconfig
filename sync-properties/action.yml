@@ -29,8 +29,9 @@ inputs:
     description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
     required: false
   contentType:
-    description: "Content type associated with the values"
+    description: "Content type for the values. Valid values are: 'keyvalue' (default), 'keyvaultref', 'featureflag'."
     required: false
+    default: "keyvalue"
 
 runs:
   using: "composite"
