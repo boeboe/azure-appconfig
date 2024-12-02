@@ -166,7 +166,17 @@ function delete_current_az_properties() {
   echo "${to_delete}" | jq -c '.entries[]' | while read -r entry; do
     local key
     key=$(echo "${entry}" | jq -r '.key')
-    az appconfig kv delete --yes --connection-string "${INPUT_CONNECTION_STRING}" --key "${key}" || {
+
+    # Apply prefix if defined
+    [[ -n "${INPUT_PREFIX:-}" ]] && key="${INPUT_PREFIX}${key}"
+
+    local cmd=("az appconfig kv delete")
+    cmd+=("--yes")
+    cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
+    cmd+=("--key '${key}'")
+    [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
+
+    eval "${cmd[*]}" || {
       print_error "Failed to delete key: ${key}"
       return 1
     }
@@ -185,8 +195,19 @@ function update_current_az_properties() {
     value=$(echo "${entry}" | jq -r '.value')
     description=$(echo "${entry}" | jq -r '.description')
 
-    az appconfig kv set --yes --connection-string "${INPUT_CONNECTION_STRING}" \
-      --key "${key}" --value "${value}" --tags "description=${description}" || {
+    # Apply prefix if defined
+    [[ -n "${INPUT_PREFIX:-}" ]] && key="${INPUT_PREFIX}${key}"
+
+    local cmd=("az appconfig kv set")
+    cmd+=("--yes")
+    cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
+    cmd+=("--key '${key}'")
+    cmd+=("--value '${value}'")
+    cmd+=("--tags 'description=${description}'")
+    [[ "${INPUT_CONTENT_TYPE}" == "keyvaultref" ]] && cmd+=("--content-type 'application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8'")
+    [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
+
+    eval "${cmd[*]}" || {
       print_error "Failed to update key: ${key}"
       return 1
     }
@@ -205,10 +226,19 @@ function create_new_az_properties() {
     value=$(echo "${entry}" | jq -r '.value')
     description=$(echo "${entry}" | jq -r '.description')
 
-    az appconfig kv set --yes --connection-string "${INPUT_CONNECTION_STRING}" \
-      --key "${key}" --value "${value}" \
-      --tags "description=${description}" \
-      ${INPUT_CONTENT_TYPE:+--content-type "${INPUT_CONTENT_TYPE}"} || {
+    # Apply prefix if defined
+    [[ -n "${INPUT_PREFIX:-}" ]] && key="${INPUT_PREFIX}${key}"
+
+    local cmd=("az appconfig kv set")
+    cmd+=("--yes")
+    cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
+    cmd+=("--key '${key}'")
+    cmd+=("--value '${value}'")
+    cmd+=("--tags 'description=${description}'")
+    [[ "${INPUT_CONTENT_TYPE}" == "keyvaultref" ]] && cmd+=("--content-type 'application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8'")
+    [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
+
+    eval "${cmd[*]}" || {
       print_error "Failed to create key: ${key}"
       return 1
     }
@@ -227,10 +257,6 @@ function perform_property_sync() {
     exit 1
   }
 
-  print_info "-------desired_properties--------"
-  print_info "${desired_properties}"
-  print_info "---------------"
-
   # Step 2: Fetch existing properties
   print_info "Fetching current properties from Azure App Configuration..."
   local existing_properties
@@ -238,10 +264,6 @@ function perform_property_sync() {
     print_error "Failed to fetch existing Azure properties."
     exit 1
   }
-
-  print_info "-------existing_properties--------"
-  print_info "${existing_properties}"
-  print_info "---------------"
 
   # Step 3: Handle strict mode
   if [[ "${INPUT_STRICT:-false}" == "true" ]]; then
