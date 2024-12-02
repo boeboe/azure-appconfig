@@ -22,7 +22,7 @@ inputs:
   label:
     description: "Label to use when setting the key-value pairs. If not specified, a null label will be used"
     required: false
-    default: "\0"
+    default: '\0'
   depth:
     description: "Max depth (positive number) for flattening the configuration file"
     required: false
