@@ -192,6 +192,38 @@ function test_get_added_keys() {
   fi
 }
 
+# Test for adding a prefix to keys
+function test_add_prefix_to_keys() {
+  print_info "Running test: test_add_prefix_to_keys"
+
+  # Scenario 1: Regular case
+  local input_json='{"entries":[{"key":"key1","value":"value1","description":"desc1"},{"key":"key2","value":"value2","description":"desc2"}]}'
+  local prefix="/myprefix/"
+  local expected='{"entries":[{"key":"/myprefix/key1","value":"value1","description":"desc1"},{"key":"/myprefix/key2","value":"value2","description":"desc2"}]}'
+
+  local result
+  result=$(add_prefix_to_keys "${input_json}" "${prefix}")
+  if [[ "${result}" == "${expected}" ]]; then
+    print_success "test_add_prefix_to_keys - Regular case passed."
+  else
+    print_error "test_add_prefix_to_keys - Regular case failed. Expected: ${expected}, Got: ${result}"
+    FAILED_TESTS+=("test_add_prefix_to_keys - Regular case")
+  fi
+
+  # Scenario 2: Empty entries list
+  local input_json='{"entries":[]}'
+  local prefix="/myprefix/"
+  local expected='{"entries":[]}'
+
+  result=$(add_prefix_to_keys "${input_json}" "${prefix}")
+  if [[ "${result}" == "${expected}" ]]; then
+    print_success "test_add_prefix_to_keys - Empty entries passed."
+  else
+    print_error "test_add_prefix_to_keys - Empty entries failed. Expected: ${expected}, Got: ${result}"
+    FAILED_TESTS+=("test_add_prefix_to_keys - Empty entries")
+  fi
+}
+
 # Run all tests
 function run_tests() {
   print_info "Starting unit tests for json.sh"
@@ -199,6 +231,7 @@ function run_tests() {
   test_get_common_keys_equal
   test_get_common_keys_changed
   test_get_added_keys
+  test_add_prefix_to_keys
 
   if [[ ${#FAILED_TESTS[@]} -eq 0 ]]; then
     print_success "All tests passed successfully!"

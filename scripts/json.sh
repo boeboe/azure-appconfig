@@ -138,3 +138,29 @@ function get_added_keys() {
 
   echo "${added}" | jq -c
 }
+
+# Function to add a prefix to every key in the JSON structure
+function add_prefix_to_keys() {
+  local json="$1"
+  local prefix="$2"
+
+  # Validate the JSON structure
+  validate_json_entries "${json}"
+
+  # If the 'entries' array is empty, return the same structure
+  if [[ "$(echo "${json}" | jq '.entries | length')" -eq 0 ]]; then
+    echo "${json}" | jq -c
+    return
+  fi
+
+  # Add the prefix to each key
+  local updated_json
+  updated_json=$(echo "${json}" | jq -c --arg prefix "${prefix}" '
+    .entries |= map(.key = "\($prefix)\(.key)")
+  ') || {
+    print_error "Failed to add prefix to keys."
+    exit 1
+  }
+
+  echo "${updated_json}" | jq -c
+}

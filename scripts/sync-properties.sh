@@ -269,6 +269,13 @@ function perform_property_sync() {
     print_error "Failed to parse input file: ${INPUT_CONFIGURATION_FILE}"
     exit 1
   }
+  if [[ -n "${INPUT_PREFIX:-}" ]]; then
+    print_info "Adding prefix '${INPUT_PREFIX}' to desired properties."
+    desired_properties=$(add_prefix_to_keys "${desired_properties}" "${INPUT_PREFIX}") || {
+      print_error "Failed to add prefix '${INPUT_PREFIX}' to desired properties."
+      exit 1
+    }
+  fi
 
   # Step 2: Fetch existing properties
   print_info "Fetching current properties from Azure App Configuration..."
