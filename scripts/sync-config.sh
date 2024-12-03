@@ -159,6 +159,13 @@ function perform_sync() {
       exit 1
     }
   fi
+  if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+    print_info "Transforming feature states for desired feature flags."
+    desired_items=$(transform_feature_state "${desired_items}") || {
+      print_error "Failed to transform feature states for desired feature flags."
+      exit 1
+    }
+  fi
 
   # Step 2: Fetch existing items based on content type
   local existing_items

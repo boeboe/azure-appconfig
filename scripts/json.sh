@@ -164,3 +164,39 @@ function add_prefix_to_keys() {
 
   echo "${updated_json}" | jq -c
 }
+
+# Function to transform feature states in the JSON structure
+function transform_feature_state() {
+  local json="$1"
+
+  # Validate the JSON structure
+  validate_json_entries "${json}"
+
+  # If the 'entries' array is empty, return the same structure
+  if [[ "$(echo "${json}" | jq '.entries | length')" -eq 0 ]]; then
+    echo "${json}" | jq -c
+    return
+  fi
+
+  # Define valid states
+  local -a true_states=("true" "enabled" "enable" "on")
+  local -a false_states=("false" "disabled" "disable" "off")
+
+  # Transform the feature states
+  local updated_json
+  updated_json=$(echo "${json}" | jq -c --argjson true_states "$(printf '%s\n' "${true_states[@]}" | jq -R . | jq -s .)" \
+                                       --argjson false_states "$(printf '%s\n' "${false_states[@]}" | jq -R . | jq -s .)" '
+    .entries |= map(
+      .value |= (
+        if (. | ascii_downcase) as $v | $true_states | index($v) then "on"
+        elif (. | ascii_downcase) as $v | $false_states | index($v) then "off"
+        else . end
+      )
+    )
+  ') || {
+    print_error "Failed to transform feature states."
+    exit 1
+  }
+
+  echo "${updated_json}" | jq -c
+}

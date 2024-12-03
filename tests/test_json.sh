@@ -197,12 +197,24 @@ function test_add_prefix_to_keys() {
   print_info "Running test: test_add_prefix_to_keys"
 
   # Scenario 1: Regular case
-  local input_json='{"entries":[{"key":"key1","value":"value1","description":"desc1"},{"key":"key2","value":"value2","description":"desc2"}]}'
+  local input_json='{
+    "entries": [
+      {"key": "key1", "value": "value1", "description": "desc1"},
+      {"key": "key2", "value": "value2", "description": "desc2"}
+    ]
+  }'
   local prefix="/myprefix/"
-  local expected='{"entries":[{"key":"/myprefix/key1","value":"value1","description":"desc1"},{"key":"/myprefix/key2","value":"value2","description":"desc2"}]}'
+  local expected_json='{
+    "entries": [
+      {"key": "/myprefix/key1", "value": "value1", "description": "desc1"},
+      {"key": "/myprefix/key2", "value": "value2", "description": "desc2"}
+    ]
+  }'
 
   local result
-  result=$(add_prefix_to_keys "${input_json}" "${prefix}")
+  result=$(add_prefix_to_keys "${input_json}" "${prefix}" | jq -c) # Compact output for consistent comparison
+  local expected
+  expected=$(echo "${expected_json}" | jq -c)
   if [[ "${result}" == "${expected}" ]]; then
     print_success "test_add_prefix_to_keys - Regular case passed."
   else
@@ -211,11 +223,11 @@ function test_add_prefix_to_keys() {
   fi
 
   # Scenario 2: Empty entries list
-  local input_json='{"entries":[]}'
-  local prefix="/myprefix/"
-  local expected='{"entries":[]}'
+  input_json='{"entries":[]}'
+  expected_json='{"entries":[]}'
 
-  result=$(add_prefix_to_keys "${input_json}" "${prefix}")
+  result=$(add_prefix_to_keys "${input_json}" "${prefix}" | jq -c)
+  expected=$(echo "${expected_json}" | jq -c)
   if [[ "${result}" == "${expected}" ]]; then
     print_success "test_add_prefix_to_keys - Empty entries passed."
   else
@@ -224,14 +236,94 @@ function test_add_prefix_to_keys() {
   fi
 }
 
+# Test for transforming feature states
+function test_transform_feature_state() {
+  print_info "Running test: test_transform_feature_state"
+
+  # Scenario 1: All valid state strings
+  local input_json='{
+    "entries": [
+      {"key": "feature1", "value": "enabled", "description": "Feature 1 description"},
+      {"key": "feature2", "value": "ENABLED", "description": "Feature 2 description"},
+      {"key": "feature3", "value": "on", "description": "Feature 3 description"},
+      {"key": "feature4", "value": "true", "description": "Feature 4 description"},
+      {"key": "feature5", "value": "disabled", "description": "Feature 5 description"},
+      {"key": "feature6", "value": "DISABLED", "description": "Feature 6 description"},
+      {"key": "feature7", "value": "off", "description": "Feature 7 description"},
+      {"key": "feature8", "value": "false", "description": "Feature 8 description"}
+    ]
+  }'
+  local expected_json='{
+    "entries": [
+      {"key": "feature1", "value": "on", "description": "Feature 1 description"},
+      {"key": "feature2", "value": "on", "description": "Feature 2 description"},
+      {"key": "feature3", "value": "on", "description": "Feature 3 description"},
+      {"key": "feature4", "value": "on", "description": "Feature 4 description"},
+      {"key": "feature5", "value": "off", "description": "Feature 5 description"},
+      {"key": "feature6", "value": "off", "description": "Feature 6 description"},
+      {"key": "feature7", "value": "off", "description": "Feature 7 description"},
+      {"key": "feature8", "value": "off", "description": "Feature 8 description"}
+    ]
+  }'
+
+  local result
+  result=$(transform_feature_state "${input_json}" | jq -c) # Compact output for consistent comparison
+  local expected
+  expected=$(echo "${expected_json}" | jq -c)
+  if [[ "${result}" == "${expected}" ]]; then
+    print_success "test_transform_feature_state - All valid states passed."
+  else
+    print_error "test_transform_feature_state - All valid states failed. Expected: ${expected}, Got: ${result}"
+    FAILED_TESTS+=("test_transform_feature_state - All valid states")
+  fi
+
+  # Scenario 2: Invalid state strings
+  input_json='{
+    "entries": [
+      {"key": "feature1", "value": "invalid", "description": "Invalid state"},
+      {"key": "feature2", "value": "12345", "description": "Invalid state"}
+    ]
+  }'
+  expected_json='{
+    "entries": [
+      {"key": "feature1", "value": "invalid", "description": "Invalid state"},
+      {"key": "feature2", "value": "12345", "description": "Invalid state"}
+    ]
+  }'
+
+  result=$(transform_feature_state "${input_json}" | jq -c)
+  expected=$(echo "${expected_json}" | jq -c)
+  if [[ "${result}" == "${expected}" ]]; then
+    print_success "test_transform_feature_state - Invalid states passed."
+  else
+    print_error "test_transform_feature_state - Invalid states failed. Expected: ${expected}, Got: ${result}"
+    FAILED_TESTS+=("test_transform_feature_state - Invalid states")
+  fi
+
+  # Scenario 3: Empty entries list
+  input_json='{"entries":[]}'
+  expected='{"entries":[]}'
+
+  result=$(transform_feature_state "${input_json}" | jq -c)
+  if [[ "${result}" == "${expected}" ]]; then
+    print_success "test_transform_feature_state - Empty entries passed."
+  else
+    print_error "test_transform_feature_state - Empty entries failed. Expected: ${expected}, Got: ${result}"
+    FAILED_TESTS+=("test_transform_feature_state - Empty entries")
+  fi
+}
+
 # Run all tests
 function run_tests() {
   print_info "Starting unit tests for json.sh"
+  
   test_get_deleted_keys
   test_get_common_keys_equal
   test_get_common_keys_changed
   test_get_added_keys
+
   test_add_prefix_to_keys
+  test_transform_feature_state
 
   if [[ ${#FAILED_TESTS[@]} -eq 0 ]]; then
     print_success "All tests passed successfully!"
