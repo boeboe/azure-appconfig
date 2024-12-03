@@ -264,7 +264,7 @@ function set_feature_flag_state() {
   cmd+=("--yes")
   cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
   cmd+=("--feature '${feature}'")
-  [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
+  [[ -n "${INPUT_LABEL:-}" && "${INPUT_LABEL}" != '\0' ]] && cmd+=("--label '${INPUT_LABEL}'")
 
   eval "${cmd[*]}" || {
     print_error "Failed to set state for feature flag: ${feature}"
