@@ -186,6 +186,7 @@ function update_current_az_features() {
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
     cmd+=("--feature '${feature}'")
     [[ -n "${description}" ]] && cmd+=("--description '${description}'")
+    [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
     eval "${cmd[*]}" || {
       print_error "Failed to create or update feature flag: ${feature}"
@@ -234,6 +235,7 @@ function create_new_az_features() {
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
     cmd+=("--feature '${feature}'")
     [[ -n "${description}" ]] && cmd+=("--description '${description}'")
+    [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
     eval "${cmd[*]}" || {
       print_error "Failed to create feature flag: ${feature}"
