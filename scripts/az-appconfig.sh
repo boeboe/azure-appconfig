@@ -195,19 +195,11 @@ function update_current_az_features() {
     print_success "Created or updated feature flag: ${feature}"
 
     # Step 2: Set the state of the feature flag
-    if [[ "${enabled}" == "true" ]]; then
-      print_info "Enabling feature flag: ${feature}"
-      az appconfig feature enable --yes --connection-string "${INPUT_CONNECTION_STRING}" --feature "${feature}" || {
-        print_error "Failed to enable feature flag: ${feature}"
-        return 1
-      }
-    else
-      print_info "Disabling feature flag: ${feature}"
-      az appconfig feature disable --yes --connection-string "${INPUT_CONNECTION_STRING}" --feature "${feature}" || {
-        print_error "Failed to disable feature flag: ${feature}"
-        return 1
-      }
-    fi
+    set_feature_flag_state "${feature}" "${enabled}" || {
+      print_error "Failed to set state for feature flag: ${feature}"
+      return 1
+    }
+
     print_success "Feature flag updated successfully: ${feature}"
   done
 }
@@ -244,19 +236,39 @@ function create_new_az_features() {
     print_success "Created feature flag: ${feature}"
 
     # Step 2: Set the state of the feature flag
-    if [[ "${enabled}" == "true" ]]; then
-      print_info "Enabling feature flag: ${feature}"
-      az appconfig feature enable --yes --connection-string "${INPUT_CONNECTION_STRING}" --feature "${feature}" || {
-        print_error "Failed to enable feature flag: ${feature}"
-        return 1
-      }
-    else
-      print_info "Disabling feature flag: ${feature}"
-      az appconfig feature disable --yes --connection-string "${INPUT_CONNECTION_STRING}" --feature "${feature}" || {
-        print_error "Failed to disable feature flag: ${feature}"
-        return 1
-      }
-    fi
+    set_feature_flag_state "${feature}" "${enabled}" || {
+      print_error "Failed to set state for feature flag: ${feature}"
+      return 1
+    }
+
     print_success "Feature flag created successfully: ${feature}"
   done
+}
+
+# Function to set the state of a feature flag in Azure App Configuration
+function set_feature_flag_state() {
+  local feature="$1"
+  local enabled="$2"
+
+  # Ensure the enabled state is valid
+  local cmd=()
+
+  if [[ "${enabled}" == "true" ]]; then
+    print_info "Enabling feature flag: ${feature}"
+    cmd=("az appconfig feature enable")
+  else
+    print_info "Disabling feature flag: ${feature}"
+    cmd=("az appconfig feature disable")
+  fi
+
+  cmd+=("--yes")
+  cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
+  cmd+=("--feature '${feature}'")
+  [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
+
+  eval "${cmd[*]}" || {
+    print_error "Failed to set state for feature flag: ${feature}"
+    return 1
+  }
+  print_success "Feature flag state set successfully: ${feature}"
 }
