@@ -83,3 +83,26 @@ function parse_az_features() {
 
   echo "${parsed}"
 }
+
+# Function to parse feature state and return "true" or "false"
+function parse_az_feature_state() {
+  local state="$1"
+
+  # Convert the input state to lowercase for case-insensitive comparison
+  local normalized_state
+  normalized_state=$(echo "${state}" | tr '[:upper:]' '[:lower:]')
+
+  # Map valid states to "true" or "false"
+  case "${normalized_state}" in
+    true|enabled|on)
+      echo "true"
+      ;;
+    false|disabled|off)
+      echo "false"
+      ;;
+    *)
+      print_error "Invalid feature state: ${state}. Valid values are: true, enabled, on, false, disabled, off."
+      exit 1
+      ;;
+  esac
+}

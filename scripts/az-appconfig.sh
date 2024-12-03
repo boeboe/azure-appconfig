@@ -163,56 +163,98 @@ function keep_current_az_features() {
   done
 }
 
-# Function to update existing features in Azure App Configuration
+# Function to update existing feature flags in Azure App Configuration
 function update_current_az_features() {
   local to_update="$1"
 
-  print_info "Updating features in Azure App Configuration..."
+  print_info "Updating feature flags in Azure App Configuration..."
   echo "${to_update}" | jq -c '.entries[]' | while read -r entry; do
-    local name state description
-    name=$(echo "${entry}" | jq -r '.key')
-    state=$(echo "${entry}" | jq -r '.value')
+    local feature description enabled
+    feature=$(echo "${entry}" | jq -r '.key')
     description=$(echo "${entry}" | jq -r '.description')
+    enabled=$(echo "${entry}" | jq -r '.value')
 
+    # Parse the enabled state
+    enabled=$(parse_az_feature_state "${enabled}") || {
+      print_warning "Invalid state for feature: ${feature}. Skipping..."
+      continue
+    }
+
+    # Step 1: Create or update the feature flag with optional description
     local cmd=("az appconfig feature set")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
-    cmd+=("--name '${name}'")
-    cmd+=("--state '${state}'")
+    cmd+=("--feature '${feature}'")
     [[ -n "${description}" ]] && cmd+=("--description '${description}'")
-    [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
     eval "${cmd[*]}" || {
-      print_error "Failed to update feature: ${name}"
+      print_error "Failed to create or update feature flag: ${feature}"
       return 1
     }
-    print_success "Updated feature: ${name}"
+    print_success "Created or updated feature flag: ${feature}"
+
+    # Step 2: Set the state of the feature flag
+    if [[ "${enabled}" == "true" ]]; then
+      print_info "Enabling feature flag: ${feature}"
+      az appconfig feature enable --yes --connection-string "${INPUT_CONNECTION_STRING}" --feature "${feature}" || {
+        print_error "Failed to enable feature flag: ${feature}"
+        return 1
+      }
+    else
+      print_info "Disabling feature flag: ${feature}"
+      az appconfig feature disable --yes --connection-string "${INPUT_CONNECTION_STRING}" --feature "${feature}" || {
+        print_error "Failed to disable feature flag: ${feature}"
+        return 1
+      }
+    fi
+    print_success "Feature flag updated successfully: ${feature}"
   done
 }
 
-# Function to create new features in Azure App Configuration
+# Function to create new feature flags in Azure App Configuration
 function create_new_az_features() {
   local to_create="$1"
 
-  print_info "Creating new features in Azure App Configuration..."
+  print_info "Creating new feature flags in Azure App Configuration..."
   echo "${to_create}" | jq -c '.entries[]' | while read -r entry; do
-    local name state description
-    name=$(echo "${entry}" | jq -r '.key')
-    state=$(echo "${entry}" | jq -r '.value')
+    local feature description enabled
+    feature=$(echo "${entry}" | jq -r '.key')
     description=$(echo "${entry}" | jq -r '.description')
+    enabled=$(echo "${entry}" | jq -r '.value')
 
+    # Parse the enabled state
+    enabled=$(parse_az_feature_state "${enabled}") || {
+      print_warning "Invalid state for feature: ${feature}. Skipping..."
+      continue
+    }
+
+    # Step 1: Create or update the feature flag with optional description
     local cmd=("az appconfig feature set")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
-    cmd+=("--name '${name}'")
-    cmd+=("--state '${state}'")
+    cmd+=("--feature '${feature}'")
     [[ -n "${description}" ]] && cmd+=("--description '${description}'")
-    [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
     eval "${cmd[*]}" || {
-      print_error "Failed to create feature: ${name}"
+      print_error "Failed to create feature flag: ${feature}"
       return 1
     }
-    print_success "Created feature: ${name}"
+    print_success "Created feature flag: ${feature}"
+
+    # Step 2: Set the state of the feature flag
+    if [[ "${enabled}" == "true" ]]; then
+      print_info "Enabling feature flag: ${feature}"
+      az appconfig feature enable --yes --connection-string "${INPUT_CONNECTION_STRING}" --feature "${feature}" || {
+        print_error "Failed to enable feature flag: ${feature}"
+        return 1
+      }
+    else
+      print_info "Disabling feature flag: ${feature}"
+      az appconfig feature disable --yes --connection-string "${INPUT_CONNECTION_STRING}" --feature "${feature}" || {
+        print_error "Failed to disable feature flag: ${feature}"
+        return 1
+      }
+    fi
+    print_success "Feature flag created successfully: ${feature}"
   done
 }
