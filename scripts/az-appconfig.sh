@@ -133,20 +133,20 @@ function delete_current_az_features() {
 
   print_info "Deleting features from Azure App Configuration..."
   echo "${to_delete}" | jq -c '.entries[]' | while read -r entry; do
-    local name
-    name=$(echo "${entry}" | jq -r '.key')
+    local feature
+    feature=$(echo "${entry}" | jq -r '.key')
 
     local cmd=("az appconfig feature delete")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
-    cmd+=("--name '${name}'")
+    cmd+=("--feature '${feature}'")
     [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
     eval "${cmd[*]}" || {
-      print_error "Failed to delete feature: ${name}"
+      print_error "Failed to delete feature: ${feature}"
       return 1
     }
-    print_success "Deleted feature: ${name}"
+    print_success "Deleted feature: ${feature}"
   done
 }
 
@@ -156,10 +156,10 @@ function keep_current_az_features() {
 
   print_info "Keeping existing features unchanged in Azure App Configuration..."
   echo "${common_equal}" | jq -c '.entries[]' | while read -r entry; do
-    local name
-    name=$(echo "${entry}" | jq -r '.key')
+    local feature
+    feature=$(echo "${entry}" | jq -r '.key')
 
-    print_info "Feature remains unchanged: ${name}"
+    print_info "Feature remains unchanged: ${feature}"
   done
 }
 
