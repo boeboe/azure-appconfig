@@ -302,3 +302,33 @@ function set_feature_flag_state() {
   }
   print_success "Feature flag state set successfully: ${feature}"
 }
+
+# Function to create a snapshot in Azure App Configuration
+function create_az_snapshot() {
+  local payload="$1"
+
+  local connectionString name filters compositionType retentionPeriod tags
+  connectionString=$(echo "${payload}" | jq -r '.connectionString')
+  name=$(echo "${payload}" | jq -r '.name')
+  filters=$(echo "${payload}" | jq -r '.filters')
+  compositionType=$(echo "${payload}" | jq -r '.compositionType // "key"')
+  retentionPeriod=$(echo "${payload}" | jq -r '.retentionPeriod // null')
+  tags=$(echo "${payload}" | jq -r '.tags // null')
+
+  # Construct the az CLI command
+  local cmd=("az appconfig snapshot create")
+  cmd+=("--snapshot-name '${name}'")
+  cmd+=("--connection-string '${connectionString}'")
+  cmd+=("--filters ${filters}")
+  cmd+=("--composition-type '${compositionType}'")
+  [[ -n "${retentionPeriod}" && "${retentionPeriod}" != "null" ]] && cmd+=("--retention-period '${retentionPeriod}'")
+  [[ -n "${tags}" && "${tags}" != "null" ]] && cmd+=("--tags '${tags}'")
+
+  # Execute the command
+  eval "${cmd[*]}" || {
+    print_error "Failed to create snapshot in Azure App Configuration: ${name}"
+    exit 1
+  }
+
+  print_success "Successfully created snapshot: ${name}"
+}

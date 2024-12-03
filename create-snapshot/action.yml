@@ -1,0 +1,48 @@
+name: "Azure App Configuration Create Snapshot"
+description: "Creates a snapshot in Azure App Configuration using Azure CLI."
+inputs:
+  connectionString:
+    description: "Connection string for the App Configuration instance."
+    required: true
+  name:
+    description: "Name of the snapshot to be created."
+    required: true
+  filters:
+    description: "Space-separated list of escaped JSON objects representing key and label filters."
+    required: true
+  compositionType:
+    description: "Composition type for building the snapshot. Valid values are: key or key_label. Defaults to 'key'."
+    required: false
+    default: "key"
+  retentionPeriod:
+    description: "Duration in seconds for which the snapshot can remain archived before expiry."
+    required: false
+  tags:
+    description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Script Path
+      run: echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Setup Script Args
+      run: |
+        echo "SCRIPTS_ARGS=\
+        --connection-string '${{ inputs.connectionString }}' \
+        --name '${{ inputs.name }}' \
+        --filters '${{ inputs.filters }}' \
+        --composition-type '${{ inputs.compositionType }}' \
+        --retention-period '${{ inputs.retentionPeriod }}' \
+        --tags '${{ inputs.tags }}'" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Validate Inputs
+      run: ${{ env.SCRIPTS_DIR }}/create-snapshot.sh validate-inputs ${{ env.SCRIPTS_ARGS }}
+      shell: bash
+
+    - name: Create Snapshot in Azure App Configuration
+      run: ${{ env.SCRIPTS_DIR }}/create-snapshot.sh execute ${{ env.SCRIPTS_ARGS }}
+      shell: bash
