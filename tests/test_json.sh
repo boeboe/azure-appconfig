@@ -5,9 +5,9 @@
 set -euo pipefail
 
 # Source the JSON utility script and logging functions
-SCRIPTS_DIR=$(dirname "$0")/..
-source "${SCRIPTS_DIR}/scripts/json.sh"
-source "${SCRIPTS_DIR}/scripts/logging.sh"
+SCRIPTS_DIR=$(dirname "$0")/../scripts
+source "${SCRIPTS_DIR}/functions/json.sh"
+source "${SCRIPTS_DIR}/functions/logging.sh"
 
 # Initialize a variable to track failed tests
 FAILED_TESTS=()

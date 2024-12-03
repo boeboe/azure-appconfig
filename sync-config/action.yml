@@ -57,9 +57,9 @@ runs:
       shell: bash
 
     - name: Validate Inputs
-      run: ${{ env.SCRIPTS_DIR }}/sync-config.sh --validate-inputs ${{ env.SCRIPTS_ARGS }}
+      run: ${{ env.SCRIPTS_DIR }}/sync-config.sh validate-inputs ${{ env.SCRIPTS_ARGS }}
       shell: bash
 
-    - name: Sync with App Configuration
-      run: ${{ env.SCRIPTS_DIR }}/sync-config.sh --perform-sync ${{ env.SCRIPTS_ARGS }}
+    - name: Sync with Azure App Configuration
+      run: ${{ env.SCRIPTS_DIR }}/sync-config.sh execute ${{ env.SCRIPTS_ARGS }}
       shell: bash

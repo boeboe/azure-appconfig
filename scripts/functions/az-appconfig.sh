@@ -1,6 +1,36 @@
 #!/usr/bin/env bash
 # az-appconfig.sh - Functions to interact with Azure App Configuration using Azure CLI
 
+# Function to set a key-value pair in Azure App Configuration
+function set_az_keyvalue() {
+  local payload="$1"
+
+  local connectionString key value prefix label tags
+  connectionString=$(echo "${payload}" | jq -r '.connectionString')
+  key=$(echo "${payload}" | jq -r '.key')
+  value=$(echo "${payload}" | jq -r '.value')
+  prefix=$(echo "${payload}" | jq -r '.prefix')
+  label=$(echo "${payload}" | jq -r '.label')
+  tags=$(echo "${payload}" | jq -r '.tags')
+
+  [[ -n "${prefix}" && "${prefix}" != "null" ]] && key="${prefix}${key}"
+
+  local cmd=("az appconfig kv set")
+  cmd+=("--yes")
+  cmd+=("--connection-string '${connectionString}'")
+  cmd+=("--key '${key}'")
+  cmd+=("--value '${value}'")
+  [[ -n "${label}" ]] && cmd+=("--label '${label}'")
+  [[ -n "${tags}" && "${tags}" != "null" ]] && cmd+=("--tags '${tags}'")
+
+  eval "${cmd[*]}" || {
+    print_error "Failed to set key-value pair in Azure App Configuration: ${key}"
+    exit 1
+  }
+
+  print_success "Successfully set key-value pair: ${key}"
+}
+
 # Function to fetch current Azure properties (do not forget the wildcard for prefix filtering with --key)
 function get_current_az_properties() {
   local cmd=("az appconfig kv list")

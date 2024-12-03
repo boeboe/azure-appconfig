@@ -5,15 +5,18 @@
 set -euo pipefail
 
 # Source the shared logging and validation utilities
-source "${SCRIPTS_DIR}/logging.sh"
-source "${SCRIPTS_DIR}/validation.sh"
-source "${SCRIPTS_DIR}/parsing.sh"
-source "${SCRIPTS_DIR}/json.sh"
-source "${SCRIPTS_DIR}/az-appconfig.sh"
+source "${SCRIPTS_DIR}/functions/logging.sh"
+source "${SCRIPTS_DIR}/functions/validation.sh"
+source "${SCRIPTS_DIR}/functions/parsing.sh"
+source "${SCRIPTS_DIR}/functions/json.sh"
+source "${SCRIPTS_DIR}/functions/az-appconfig.sh"
 
 # Usage message
 function usage() {
-  local usage_message="Usage: $0 --validate-inputs | --perform-sync [ARGUMENTS]\n"
+  local usage_message="Usage: $0 [ACTION] [ARGUMENTS]\n"
+  usage_message+="Action:\n"
+  usage_message+="  validate-inputs\n"
+  usage_message+="  execute\n"
   usage_message+="Arguments:\n"
   usage_message+="  --configuration-file <file>\n"
   usage_message+="  --format <json|yaml|properties>\n"
@@ -73,12 +76,12 @@ function parse_arguments() {
         INPUT_CONTENT_TYPE="$2"
         shift 2
         ;;
-      --validate-inputs)
+      validate-inputs)
         ACTION="validate_inputs"
         shift
         ;;
-      --perform-sync)
-        ACTION="perform_sync"
+      execute)
+        ACTION="execute"
         shift
         ;;
       *)
@@ -90,7 +93,7 @@ function parse_arguments() {
 
   # Ensure an action is specified
   if [[ -z "${ACTION:-}" ]]; then
-    print_error "No action specified (e.g., --validate-inputs or --perform-sync)."
+    print_error "No action specified (e.g., validate-inputs or execute)."
     usage
   fi
 }
@@ -143,7 +146,7 @@ function validate_inputs() {
 }
 
 # Main function to perform sync operation
-function perform_sync() {
+function perform_config_sync() {
   print_info "Starting sync operation..."
 
   # Step 1: Parse the input file
@@ -268,8 +271,8 @@ function main() {
     validate_inputs)
       validate_inputs
       ;;
-    perform_sync)
-      perform_sync
+    execute)
+      perform_config_sync
       ;;
     *)
       print_error "Invalid action: $ACTION"

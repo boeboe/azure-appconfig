@@ -1,0 +1,49 @@
+name: "Azure App Configuration Set Key-Value"
+description: "Sets a single key-value pair in Azure App Configuration using Azure CLI."
+inputs:
+  connectionString:
+    description: "Connection string for the App Configuration instance."
+    required: true
+  key:
+    description: "Key to set in Azure App Configuration."
+    required: true
+  value:
+    description: "Value to associate with the specified key."
+    required: true
+  prefix:
+    description: "Optional prefix to prepend to the key."
+    required: false
+    default: ""
+  label:
+    description: "Optional label to associate with the key-value pair. Defaults to null label."
+    required: false
+    default: '\0'
+  tags:
+    description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Script Path
+      run: echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Setup Script Args
+      run: |
+        echo "SCRIPTS_ARGS=\
+        --connection-string '${{ inputs.connectionString }}' \
+        --key '${{ inputs.key }}' \
+        --prefix '${{ inputs.prefix }}' \
+        --value '${{ inputs.value }}' \
+        --label '${{ inputs.label }}' \
+        --tags '${{ inputs.tags }}' >> $GITHUB_ENV
+      shell: bash
+
+    - name: Validate Inputs
+      run: ${{ env.SCRIPTS_DIR }}/set-keyvalue.sh validate-inputs ${{ env.SCRIPTS_ARGS }}
+      shell: bash
+
+    - name: Set Key-Value in Azure App Configuration
+      run: ${{ env.SCRIPTS_DIR }}/set-keyvalue.sh execute ${{ env.SCRIPTS_ARGS }}
+      shell: bash
