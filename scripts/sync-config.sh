@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sync-properties.sh - Script to validate inputs and perform sync operations for Azure App Configuration
+# sync-config.sh - Script to validate inputs and perform sync operations for Azure App Configuration
 # shellcheck disable=SC1091
 
 set -euo pipefail
@@ -13,7 +13,7 @@ source "${SCRIPTS_DIR}/az-appconfig.sh"
 
 # Usage message
 function usage() {
-  local usage_message="Usage: $0 --validate-inputs | --perform-property-sync [ARGUMENTS]\n"
+  local usage_message="Usage: $0 --validate-inputs | --perform-sync [ARGUMENTS]\n"
   usage_message+="Arguments:\n"
   usage_message+="  --configuration-file <file>\n"
   usage_message+="  --format <json|yaml|properties>\n"
@@ -77,8 +77,8 @@ function parse_arguments() {
         ACTION="validate_inputs"
         shift
         ;;
-      --perform-property-sync)
-        ACTION="perform_property_sync"
+      --perform-sync)
+        ACTION="perform_sync"
         shift
         ;;
       *)
@@ -90,7 +90,7 @@ function parse_arguments() {
 
   # Ensure an action is specified
   if [[ -z "${ACTION:-}" ]]; then
-    print_error "No action specified (e.g., --validate-inputs or --perform-property-sync)."
+    print_error "No action specified (e.g., --validate-inputs or --perform-sync)."
     usage
   fi
 }
@@ -132,7 +132,7 @@ function validate_inputs() {
   fi
 
   # Validation for INPUT_CONTENT_TYPE
-  validate_enum "INPUT_CONTENT_TYPE" "${INPUT_CONTENT_TYPE:-keyvalue}" "keyvalue" "keyvaultref"
+  validate_enum "INPUT_CONTENT_TYPE" "${INPUT_CONTENT_TYPE:-keyvalue}" "keyvalue" "keyvaultref" "featureflag"
 
   # Optional fields
   [[ -n "${INPUT_STRICT:-}" ]] && validate_boolean "INPUT_STRICT" "${INPUT_STRICT}"
@@ -142,77 +142,108 @@ function validate_inputs() {
   print_success "All inputs validated successfully."
 }
 
-# Main function to perform property sync
-function perform_property_sync() {
-  print_info "Starting property sync operation..."
+# Main function to perform sync operation
+function perform_sync() {
+  print_info "Starting sync operation..."
 
   # Step 1: Parse the input file
-  local desired_properties
-  desired_properties=$(parse_properties_file "${INPUT_CONFIGURATION_FILE}") || {
+  local desired_items
+  desired_items=$(parse_properties_file "${INPUT_CONFIGURATION_FILE}") || {
     print_error "Failed to parse input file: ${INPUT_CONFIGURATION_FILE}"
     exit 1
   }
   if [[ -n "${INPUT_PREFIX:-}" ]]; then
-    print_info "Adding prefix '${INPUT_PREFIX}' to desired properties."
-    desired_properties=$(add_prefix_to_keys "${desired_properties}" "${INPUT_PREFIX}") || {
-      print_error "Failed to add prefix '${INPUT_PREFIX}' to desired properties."
+    print_info "Adding prefix '${INPUT_PREFIX}' to desired items."
+    desired_items=$(add_prefix_to_keys "${desired_items}" "${INPUT_PREFIX}") || {
+      print_error "Failed to add prefix '${INPUT_PREFIX}' to desired items."
       exit 1
     }
   fi
 
-  # Step 2: Fetch existing properties
-  print_info "Fetching current properties from Azure App Configuration..."
-  local existing_properties
-  existing_properties=$(get_current_az_properties) || {
-    print_error "Failed to fetch existing Azure properties."
-    exit 1
-  }
+  # Step 2: Fetch existing items based on content type
+  local existing_items
+  if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+    print_info "Fetching current feature flags from Azure App Configuration..."
+    existing_items=$(get_current_az_features) || {
+      print_error "Failed to fetch existing Azure feature flags."
+      exit 1
+    }
+  else
+    print_info "Fetching current properties from Azure App Configuration..."
+    existing_items=$(get_current_az_properties) || {
+      print_error "Failed to fetch existing Azure properties."
+      exit 1
+    }
+  fi
 
   # Step 3: Handle strict mode
   if [[ "${INPUT_STRICT:-false}" == "true" ]]; then
     local to_delete
-    to_delete=$(get_deleted_keys "${existing_properties}" "${desired_properties}") || {
-      print_error "Failed to determine keys to delete."
+    to_delete=$(get_deleted_keys "${existing_items}" "${desired_items}") || {
+      print_error "Failed to determine items to delete."
       exit 1
     }
-    delete_current_az_properties "${to_delete}" || {
-      print_error "Failed to delete keys in strict mode."
+    if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+      delete_current_az_features "${to_delete}" || {
+        print_error "Failed to delete feature flags in strict mode."
+        exit 1
+      }
+    else
+      delete_current_az_properties "${to_delete}" || {
+        print_error "Failed to delete properties in strict mode."
+        exit 1
+      }
+    fi
+  fi
+
+  # Step 4: Compare and sync items
+  local common_equal common_changed added
+  common_equal=$(get_common_keys_equal "${existing_items}" "${desired_items}") || {
+    print_error "Failed to determine common equal items."
+    exit 1
+  }
+
+  common_changed=$(get_common_keys_changed "${existing_items}" "${desired_items}") || {
+    print_error "Failed to determine common changed items."
+    exit 1
+  }
+
+  added=$(get_added_keys "${existing_items}" "${desired_items}") || {
+    print_error "Failed to determine added items."
+    exit 1
+  }
+
+  # Log untouched items
+  if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+    keep_current_az_features "${common_equal}"
+  else
+    keep_current_az_properties "${common_equal}"
+  fi
+
+  # Update and create items
+  if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+    update_current_az_features "${common_changed}" || {
+      print_error "Failed to update existing feature flags."
+      exit 1
+    }
+
+    create_new_az_features "${added}" || {
+      print_error "Failed to create new feature flags."
+      exit 1
+    }
+  else
+    update_current_az_properties "${common_changed}" || {
+      print_error "Failed to update existing properties."
+      exit 1
+    }
+
+    create_new_az_properties "${added}" || {
+      print_error "Failed to create new properties."
       exit 1
     }
   fi
 
-  # Step 4: Compare and sync properties
-  local common_equal common_changed added
-  common_equal=$(get_common_keys_equal "${existing_properties}" "${desired_properties}") || {
-    print_error "Failed to determine common equal keys."
-    exit 1
-  }
-
-  common_changed=$(get_common_keys_changed "${existing_properties}" "${desired_properties}") || {
-    print_error "Failed to determine common changed keys."
-    exit 1
-  }
-
-  added=$(get_added_keys "${existing_properties}" "${desired_properties}") || {
-    print_error "Failed to determine added keys."
-    exit 1
-  }
-
-  # Log untouched keys
-  keep_current_az_properties "${common_equal}"
-
-  # Update and create keys
-  update_current_az_properties "${common_changed}" || {
-    print_error "Failed to update existing keys."
-    exit 1
-  }
-
-  create_new_az_properties "${added}" || {
-    print_error "Failed to create new keys."
-    exit 1
-  }
-
-  print_success "Property sync operation completed successfully."
+  print_success "Sync operation completed successfully."
 }
 
 # Main script logic
@@ -230,8 +261,8 @@ function main() {
     validate_inputs)
       validate_inputs
       ;;
-    perform_property_sync)
-      perform_property_sync
+    perform_sync)
+      perform_sync
       ;;
     *)
       print_error "Invalid action: $ACTION"

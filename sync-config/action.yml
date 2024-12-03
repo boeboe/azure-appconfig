@@ -1,5 +1,5 @@
 name: "Azure App Configuration Sync"
-description: "Azure App Configuration Sync of Properies using Azure CLI."
+description: "Azure App Configuration Sync of Properies and Feature Flags using Azure CLI."
 inputs:
   configurationFile:
     description: "Path to the configuration file in the repo, relative to the repo root. Also supports glob patterns and multiple files"
@@ -30,7 +30,7 @@ inputs:
     description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
     required: false
   contentType:
-    description: "Content type for the values. Valid values are: 'keyvalue' (default) or 'keyvaultref'"
+    description: "Content type for the values. Valid values are: 'keyvalue' (default), 'keyvaultref' or 'featureflag'"
     required: false
     default: "keyvalue"
 
@@ -57,9 +57,9 @@ runs:
       shell: bash
 
     - name: Validate Inputs
-      run: ${{ env.SCRIPTS_DIR }}/sync-properties.sh --validate-inputs ${{ env.SCRIPTS_ARGS }}
+      run: ${{ env.SCRIPTS_DIR }}/sync-config.sh --validate-inputs ${{ env.SCRIPTS_ARGS }}
       shell: bash
 
-    - name: Import to App Configuration
-      run: ${{ env.SCRIPTS_DIR }}/sync-properties.sh --perform-property-sync ${{ env.SCRIPTS_ARGS }}
+    - name: Sync with App Configuration
+      run: ${{ env.SCRIPTS_DIR }}/sync-config.sh --perform-sync ${{ env.SCRIPTS_ARGS }}
       shell: bash
