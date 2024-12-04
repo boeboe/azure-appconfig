@@ -196,7 +196,7 @@ function perform_config_sync() {
       print_error "Failed to determine items to delete."
       exit 1
     }
-    if [[ -n "${to_delete}" ]]; then
+    if [[ "$(echo "${to_delete}" | jq '.entries | length')" -gt 0 ]]; then
       changes_applied=true
       if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
         delete_current_az_features "${to_delete}" || {
@@ -237,7 +237,7 @@ function perform_config_sync() {
   fi
 
   # Update and create items
-  if [[ -n "${common_changed}" || -n "${added}" ]]; then
+  if [[ "$(echo "${common_changed}" | jq '.entries | length')" -gt 0 || "$(echo "${added}" | jq '.entries | length')" -gt 0 ]]; then
     changes_applied=true
     if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
       update_current_az_features "${common_changed}" || {
