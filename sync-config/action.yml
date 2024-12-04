@@ -67,17 +67,5 @@ runs:
 
     - name: Sync with Azure App Configuration
       id: sync
-      run: |
-        ${{ env.SCRIPTS_DIR }}/sync-config.sh execute ${{ env.SCRIPTS_ARGS }}
-        echo "!!!!!!!!!!!!!!!!!!!!!!! changes_applied=${{ env.CHANGES_APPLIED }}"
-        echo "!!!!!!!!!!!!!!!!!!!!!!! changes_applied=${CHANGES_APPLIED}"
-        echo "!!!!!!!!!!!!!!!!!!!!!!! GITHUB_ENV=${GITHUB_ENV}"
-        echo "!!!!!!!!!!!!!!!!!!!!!!! GITHUB_OUTPUT=${GITHUB_OUTPUT}"
-        echo "!!!!!!!!!!!!!!!!!!!!!!! env.GITHUB_ENV=${{ env.GITHUB_ENV }}"
-        echo "!!!!!!!!!!!!!!!!!!!!!!! env.GITHUB_OUTPUT=${{ env.GITHUB_OUTPUT }}"
-        echo "Contents of GITHUB_ENV:"
-        cat "${GITHUB_ENV}"
-        echo "Contents of GITHUB_OUTPUT:"
-        cat "${GITHUB_OUTPUT}"
-        # echo "changes_applied=${{ env.CHANGES_APPLIED }}" >> $GITHUB_OUTPUT
+      run: ${{ env.SCRIPTS_DIR }}/sync-config.sh execute ${{ env.SCRIPTS_ARGS }}
       shell: bash
