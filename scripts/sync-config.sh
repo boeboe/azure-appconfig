@@ -264,9 +264,12 @@ function perform_config_sync() {
 
   # Export the changes_applied variable to the GitHub environment
   print_info "GITHUB_ENV: ${GITHUB_ENV}"
+  print_info "GITHUB_OUTPUT: ${GITHUB_OUTPUT}"
   print_info "Changes applied: ${changes_applied}"
   echo "CHANGES_APPLIED=${changes_applied}" >> "${GITHUB_ENV}"
+  echo "CHANGES_APPLIED=${changes_applied}" >> "${GITHUB_OUTPUT}"
   print_info "GITHUB_ENV: ${GITHUB_ENV}"
+  print_info "GITHUB_OUTPUT: ${GITHUB_OUTPUT}"
   export CHANGES_APPLIED="${changes_applied}"
 
   print_success "Sync operation completed successfully."
