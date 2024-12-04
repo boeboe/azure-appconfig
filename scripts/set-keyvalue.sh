@@ -99,7 +99,6 @@ function validate_inputs() {
   validate_set "INPUT_VALUE" "${INPUT_VALUE:-}"
 
   # Optional fields
-  [[ -n "${INPUT_LABEL:-}" && "${INPUT_LABEL}" != '\0' ]] && validate_label "INPUT_LABEL" "${INPUT_LABEL}"
   [[ -n "${INPUT_TAGS:-}" ]] && validate_json "INPUT_TAGS" "${INPUT_TAGS}"
 
   print_success "All inputs validated successfully."
