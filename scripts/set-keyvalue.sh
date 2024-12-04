@@ -115,7 +115,7 @@ function perform_set_keyvalue() {
       --arg key "${INPUT_KEY}" \
       --arg value "${INPUT_VALUE}" \
       --arg prefix "${INPUT_PREFIX}" \
-      --arg label "${INPUT_LABEL}" \
+      --arg mylabel "${INPUT_LABEL}" \
       --arg tags "${INPUT_TAGS}" \
       '{
         connectionString: $connectionString,
@@ -123,7 +123,7 @@ function perform_set_keyvalue() {
         value: $value
       }
       | if $prefix != "" and $prefix != "null" then . + {prefix: $prefix} else . end
-      | if $label != "" and $label != "null" then . + {label: $label} else . end
+      | if $mylabel != "" and $mylabel != "null" then . + {label: $mylabel} else . end
       | if $tags != "" and $tags != "null" then . + {tags: $tags} else . end') || {
       print_error "Failed to construct JSON payload with jq"
       exit 1
