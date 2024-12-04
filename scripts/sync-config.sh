@@ -270,6 +270,10 @@ function perform_config_sync() {
   echo "CHANGES_APPLIED=${changes_applied}" >> "${GITHUB_OUTPUT}"
   print_info "GITHUB_ENV: ${GITHUB_ENV}"
   print_info "GITHUB_OUTPUT: ${GITHUB_OUTPUT}"
+  print_info "Contents of GITHUB_ENV:"
+  cat "${GITHUB_ENV}"
+  print_info "Contents of GITHUB_OUTPUT:"
+  cat "${GITHUB_OUTPUT}"
   export CHANGES_APPLIED="${changes_applied}"
 
   print_success "Sync operation completed successfully."
