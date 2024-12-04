@@ -115,17 +115,20 @@ function perform_set_keyvalue() {
     --arg connectionString "${INPUT_CONNECTION_STRING}" \
     --arg key "${INPUT_KEY}" \
     --arg value "${INPUT_VALUE}" \
-    --arg prefix "${INPUT_PREFIX:-}" \
-    --arg label "${INPUT_LABEL:-}" \
-    --arg tags "${INPUT_TAGS:-}" \
+    --arg prefix "${INPUT_PREFIX}" \
+    --arg label "${INPUT_LABEL}" \
+    --arg tags "${INPUT_TAGS}" \
     '{
       connectionString: $connectionString,
       key: $key,
-      value: $value,
-      prefix: $prefix,
-      label: $label,
-      tags: $tags
-    }')
+      value: $value
+    }
+    + if $prefix != "" and $prefix != "null" then {prefix: $prefix} else {} end
+    + if $label != "" and $label != "null" then {label: $label} else {} end
+    + if $tags != "" and $tags != "null" then {tags: $tags} else {} end') || {
+      print_error "Failed to construct JSON payload with jq"
+      exit 1
+  }
 
   # Step 1: Write the key-value pair to Azure App Configuration
   set_az_keyvalue "${args}"
