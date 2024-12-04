@@ -149,6 +149,9 @@ function validate_inputs() {
 function perform_config_sync() {
   print_info "Starting sync operation..."
 
+  # Assume changes_applied is false initially
+  local changes_applied=false
+
   # Step 1: Parse the input file
   local desired_items
   desired_items=$(parse_properties_file "${INPUT_CONFIGURATION_FILE}") || {
@@ -193,16 +196,19 @@ function perform_config_sync() {
       print_error "Failed to determine items to delete."
       exit 1
     }
-    if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
-      delete_current_az_features "${to_delete}" || {
-        print_error "Failed to delete feature flags in strict mode."
-        exit 1
-      }
-    else
-      delete_current_az_properties "${to_delete}" || {
-        print_error "Failed to delete properties in strict mode."
-        exit 1
-      }
+    if [[ -n "${to_delete}" ]]; then
+      changes_applied=true
+      if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+        delete_current_az_features "${to_delete}" || {
+          print_error "Failed to delete feature flags in strict mode."
+          exit 1
+        }
+      else
+        delete_current_az_properties "${to_delete}" || {
+          print_error "Failed to delete properties in strict mode."
+          exit 1
+        }
+      fi
     fi
   fi
 
@@ -231,27 +237,33 @@ function perform_config_sync() {
   fi
 
   # Update and create items
-  if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
-    update_current_az_features "${common_changed}" || {
-      print_error "Failed to update existing feature flags."
-      exit 1
-    }
+  if [[ -n "${common_changed}" || -n "${added}" ]]; then
+    changes_applied=true
+    if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+      update_current_az_features "${common_changed}" || {
+        print_error "Failed to update existing feature flags."
+        exit 1
+      }
 
-    create_new_az_features "${added}" || {
-      print_error "Failed to create new feature flags."
-      exit 1
-    }
-  else
-    update_current_az_properties "${common_changed}" || {
-      print_error "Failed to update existing properties."
-      exit 1
-    }
+      create_new_az_features "${added}" || {
+        print_error "Failed to create new feature flags."
+        exit 1
+      }
+    else
+      update_current_az_properties "${common_changed}" || {
+        print_error "Failed to update existing properties."
+        exit 1
+      }
 
-    create_new_az_properties "${added}" || {
-      print_error "Failed to create new properties."
-      exit 1
-    }
+      create_new_az_properties "${added}" || {
+        print_error "Failed to create new properties."
+        exit 1
+      }
+    fi
   fi
+
+  # Export the changes_applied variable to the GitHub environment
+  echo "CHANGES_APPLIED=${changes_applied}" >> "${GITHUB_ENV}"
 
   print_success "Sync operation completed successfully."
 }

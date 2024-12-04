@@ -34,6 +34,11 @@ inputs:
     required: false
     default: "keyvalue"
 
+outputs:
+  changes_applied:
+    description: "Indicates whether changes were applied during the sync process."
+    value: ${{ steps.sync.outputs.changes_applied }}
+
 runs:
   using: "composite"
   steps:
@@ -61,5 +66,8 @@ runs:
       shell: bash
 
     - name: Sync with Azure App Configuration
-      run: ${{ env.SCRIPTS_DIR }}/sync-config.sh execute ${{ env.SCRIPTS_ARGS }}
+      id: sync
+      run: |
+        ${{ env.SCRIPTS_DIR }}/sync-config.sh execute ${{ env.SCRIPTS_ARGS }}
+        echo "changes_applied=${{ env.CHANGES_APPLIED }}" >> $GITHUB_OUTPUT
       shell: bash
