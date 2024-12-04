@@ -37,7 +37,7 @@ runs:
         --prefix '${{ inputs.prefix }}' \
         --value '${{ inputs.value }}' \
         --label '${{ inputs.label }}' \
-        --tags '${{ inputs.tags }}' >> $GITHUB_ENV
+        --tags '${{ inputs.tags }}'" >> $GITHUB_ENV
       shell: bash
 
     - name: Validate Inputs
