@@ -111,20 +111,20 @@ function perform_set_keyvalue() {
   # Construct the JSON payload
   local args
   args=$(jq -n \
-    --arg connectionString "${INPUT_CONNECTION_STRING}" \
-    --arg key "${INPUT_KEY}" \
-    --arg value "${INPUT_VALUE}" \
-    --arg prefix "${INPUT_PREFIX}" \
-    --arg label "${INPUT_LABEL}" \
-    --arg tags "${INPUT_TAGS}" \
-    '{
-      connectionString: $connectionString,
-      key: $key,
-      value: $value
-    }
-    + if $prefix != "" and $prefix != "null" then {prefix: $prefix} else {} end
-    + if $label != "" and $label != "null" and $label != "\0" then {label: $label} else {} end
-    + if $tags != "" and $tags != "null" then {tags: $tags} else {} end') || {
+      --arg connectionString "${INPUT_CONNECTION_STRING}" \
+      --arg key "${INPUT_KEY}" \
+      --arg value "${INPUT_VALUE}" \
+      --arg prefix "${INPUT_PREFIX}" \
+      --arg label "${INPUT_LABEL}" \
+      --arg tags "${INPUT_TAGS}" \
+      '{
+        connectionString: $connectionString,
+        key: $key,
+        value: $value
+      }
+      + if $prefix != "" and $prefix != "null" then {prefix: $prefix} else {} end
+      + if $label != "" and $label != "null" and $label != "\\0" then {label: $label} else {} end
+      + if $tags != "" and $tags != "null" then {tags: $tags} else {} end') || {
       print_error "Failed to construct JSON payload with jq"
       exit 1
   }
