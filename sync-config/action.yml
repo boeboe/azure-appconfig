@@ -79,5 +79,5 @@ runs:
         cat "${GITHUB_ENV}"
         echo "Contents of GITHUB_OUTPUT:"
         cat "${GITHUB_OUTPUT}"
-        echo "changes_applied=${{ env.CHANGES_APPLIED }}" >> $GITHUB_OUTPUT
+        # echo "changes_applied=${{ env.CHANGES_APPLIED }}" >> $GITHUB_OUTPUT
       shell: bash
