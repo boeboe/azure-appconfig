@@ -15,9 +15,8 @@ inputs:
     required: false
     default: ""
   label:
-    description: "Optional label to associate with the key-value pair. Defaults to null label."
+    description: "Optional label to associate with the key-value pair."
     required: false
-    default: '\0'
   tags:
     description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
     required: false

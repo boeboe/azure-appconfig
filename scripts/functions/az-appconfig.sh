@@ -20,7 +20,7 @@ function set_az_keyvalue() {
   cmd+=("--connection-string '${connectionString}'")
   cmd+=("--key '${key}'")
   cmd+=("--value '${value}'")
-  [[ -n "${label}" ]] && cmd+=("--label '${label}'")
+  [[ -n "${label}" && "${label}" != "null" ]] && cmd+=("--label '${label}'")
   [[ -n "${tags}" && "${tags}" != "null" ]] && cmd+=("--tags '${tags}'")
 
   eval "${cmd[*]}" || {
