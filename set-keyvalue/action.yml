@@ -25,8 +25,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Script Path
-      run: echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts" >> $GITHUB_ENV
+    - name: Setup Script and GitHub Path
+      run: |
+        echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts" >> $GITHUB_ENV
+        echo "${{ github.action_path }}/../scripts" >> $GITHUB_PATH
       shell: bash
 
     - name: Setup Script Args
@@ -41,9 +43,9 @@ runs:
       shell: bash
 
     - name: Validate Inputs
-      run: ${{ env.SCRIPTS_DIR }}/set-keyvalue.sh validate-inputs ${{ env.SCRIPTS_ARGS }}
+      run: set-keyvalue.sh validate-inputs ${{ env.SCRIPTS_ARGS }}
       shell: bash
 
     - name: Set Key-Value in Azure App Configuration
-      run: ${{ env.SCRIPTS_DIR }}/set-keyvalue.sh execute ${{ env.SCRIPTS_ARGS }}
+      run: set-keyvalue.sh execute ${{ env.SCRIPTS_ARGS }}
       shell: bash
