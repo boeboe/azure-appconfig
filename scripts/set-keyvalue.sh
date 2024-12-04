@@ -124,7 +124,7 @@ function perform_set_keyvalue() {
       value: $value
     }
     + if $prefix != "" and $prefix != "null" then {prefix: $prefix} else {} end
-    + if $label != "" and $label != "null" then {label: $label} else {} end
+    + if $label != "" and $label != "\0" then {label: $label} else {} end
     + if $tags != "" and $tags != "null" then {tags: $tags} else {} end') || {
       print_error "Failed to construct JSON payload with jq"
       exit 1
