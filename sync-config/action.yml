@@ -70,5 +70,6 @@ runs:
       run: |
         ${{ env.SCRIPTS_DIR }}/sync-config.sh execute ${{ env.SCRIPTS_ARGS }}
         echo "!!!!!!!!!!!!!!!!!!!!!!! changes_applied=${{ env.CHANGES_APPLIED }}"
+        echo "!!!!!!!!!!!!!!!!!!!!!!! changes_applied=${CHANGES_APPLIED}"
         echo "changes_applied=${{ env.CHANGES_APPLIED }}" >> $GITHUB_OUTPUT
       shell: bash
