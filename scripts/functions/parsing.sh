@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
-# parsing.sh - Functions to parse properties files and extract keys, key-value pairs, and descriptions.
+# parsing.sh - Functions to parse properties files, Azure CLI JSON output, and YAML files.
 
-# Function to extract key-value-description triples from a properties file
+# Function to parse key-value pairs from a properties file
+# Input:
+#   - Path to a properties file
+# Output:
+#   - JSON object with entries containing keys and values
+# Example:
+#   Input file:
+#     key1=value1
+#     key2=value2
+#   Output:
+#     {"entries":[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]}
 function parse_properties_file() {
-  local filelocation="$1"
+  local filelocation="${1}"
 
   # Check if the file exists and is readable
   if [[ ! -f "${filelocation}" || ! -r "${filelocation}" ]]; then
@@ -11,36 +21,137 @@ function parse_properties_file() {
     exit 1
   fi
 
-  # Extract keys, values, and descriptions
-  local kvd
-  kvd=$(grep -v '^#' "${filelocation}" | grep '=' | awk -F '=' '
+  # Extract keys and values
+  local kv_pairs
+  kv_pairs=$(grep -v '^#' "${filelocation}" | grep '=' | awk -F '=' '
     {
       key=$1;
       value=$2;
       gsub(/^[[:space:]]+|[[:space:]]+$/, "", key);  # Trim spaces around key
       gsub(/^[[:space:]]+|[[:space:]]+$/, "", value);  # Trim spaces around value
-      split(value, desc, "#");  # Split value on first "#" for description
-      value=desc[1];
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value);  # Trim spaces around value
       gsub(/"/, "\\\"", value);  # Escape quotes in value for JSON
-      description=(length(desc) > 1 ? desc[2] : "");  # Extract description if present
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", description);  # Trim spaces around description
-      printf "{\"key\":\"%s\",\"value\":\"%s\",\"description\":\"%s\"},", key, value, description;
+      printf "{\"key\":\"%s\",\"value\":\"%s\"},", key, value;
     }' | sed 's/,$//')  # Remove trailing comma from JSON array
 
   # Check if any data was found
-  if [[ -z "${kvd}" ]]; then
+  if [[ -z "${kv_pairs}" ]]; then
     print_error "No valid entries found in properties file: ${filelocation}"
     exit 1
   fi
 
-  # Output JSON array of key-value-description triples
-  echo "{\"entries\":[${kvd}]}" | jq -c
+  # Output JSON array of key-value pairs
+  echo "{\"entries\":[${kv_pairs}]}" | jq -c
+}
+
+# Function to parse and flatten JSON content
+# Input:
+#   - Raw JSON string
+# Output:
+#   - Flattened JSON as key-value pairs in "entries" format
+# Example:
+#   Input JSON:
+#     {"key1":"value1","key2":{"key2.1":"value2.1"}}
+#   Output:
+#     {"entries":[{"key":"key1","value":"value1"},{"key":"key2.key2.1","value":"value2.1"}]}
+function parse_json_content() {
+  local json_content="$1"
+
+  # Validate JSON content
+  if ! echo "${json_content}" | jq empty 2>/dev/null; then
+    print_error "Invalid JSON content provided."
+    exit 1
+  fi
+
+  # Flatten the JSON structure into key-value pairs
+  local flattened
+  flattened=$(echo "${json_content}" | jq -c '
+    def flatten_object(obj; prefix):
+      reduce (obj | to_entries)[] as $item ({}; . +
+        if ($item.value | type) == "object" then
+          flatten_object($item.value; (if prefix == "" then "" else (prefix + ".") end) + $item.key)
+        else
+          {((if prefix == "" then "" else (prefix + ".") end) + $item.key): ($item.value // "")}
+        end
+      );
+    flatten_object(. ; "")
+  ') || {
+    print_error "Failed to parse or flatten JSON content."
+    exit 1
+  }
+
+  # Convert flattened key-value pairs into an "entries" JSON object
+  local entries
+  entries=$(echo "${flattened}" | jq -c 'to_entries | map({key: .key, value: (.value // "")})') || {
+    print_error "Failed to convert flattened JSON into entries format."
+    exit 1
+  }
+
+  # Output final JSON structure
+  echo "{\"entries\":${entries}}" | jq -c
+}
+
+# Function to parse JSON files
+# Input:
+#   - Path to a JSON file
+# Output:
+#   - JSON object in "entries" format
+function parse_json_file() {
+  local file="$1"
+
+  # Check if the file exists and is readable
+  if [[ ! -f "${file}" || ! -r "${file}" ]]; then
+    print_error "JSON file not found or not readable: ${file}"
+    exit 1
+  fi
+
+  # Read the file content and call `parse_json_content`
+  local json_content
+  json_content=$(cat "${file}")
+  parse_json_content "${json_content}"
+}
+
+# Function to parse YAML files
+# Input:
+#   - Path to a YAML file
+# Output:
+#   - JSON object in "entries" format
+# Example:
+#   Input YAML:
+#     key1: value1
+#     key2:
+#       key2.1: value2.1
+#   Output:
+#     {"entries":[{"key":"key1","value":"value1"},{"key":"key2.key2.1","value":"value2.1"}]}
+function parse_yaml_file() {
+  local file="$1"
+
+  # Check if the file exists and is readable
+  if [[ ! -f "${file}" || ! -r "${file}" ]]; then
+    print_error "YAML file not found or not readable: ${file}"
+    exit 1
+  fi
+
+  # Convert YAML to JSON and call `parse_json_content`
+  local json_content
+  json_content=$(yq eval -o=json . "${file}") || {
+    print_error "Failed to convert YAML to JSON for file: ${file}"
+    exit 1
+  }
+  parse_json_content "${json_content}"
 }
 
 # Function to parse key-value properties from Azure CLI output
+# Input:
+#   - JSON array from Azure CLI output
+# Output:
+#   - JSON object with entries containing keys and values
+# Example:
+#   Input JSON:
+#     [{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]
+#   Output:
+#     {"entries":[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]}
 function parse_az_kv_properties() {
-  local json_output="$1"
+  local json_output="${1}"
 
   # Validate the JSON structure
   if ! echo "${json_output}" | jq -e '. | type == "array"' &>/dev/null; then
@@ -50,7 +161,7 @@ function parse_az_kv_properties() {
 
   # Convert the JSON to the desired format
   local parsed
-  parsed=$(echo "${json_output}" | jq -c '[.[] | {key: .key, value: .value, description: (.tags.description // "")}] | {entries: .}')
+  parsed=$(echo "${json_output}" | jq -c '[.[] | {key: .key, value: .value}] | {entries: .}')
 
   # Ensure the output is not empty
   if [[ -z "${parsed}" || "${parsed}" == "{}" ]]; then
@@ -62,8 +173,17 @@ function parse_az_kv_properties() {
 }
 
 # Function to parse feature flags from Azure CLI output
+# Input:
+#   - JSON array from Azure CLI output
+# Output:
+#   - JSON object with entries containing feature names and states
+# Example:
+#   Input JSON:
+#     [{"name":"feature1","state":"on"},{"name":"feature2","state":"off"}]
+#   Output:
+#     {"entries":[{"key":"feature1","value":"on"},{"key":"feature2","value":"off"}]}
 function parse_az_features() {
-  local json_output="$1"
+  local json_output="${1}"
 
   # Validate the JSON structure
   if ! echo "${json_output}" | jq -e '. | type == "array"' &>/dev/null; then
@@ -73,7 +193,7 @@ function parse_az_features() {
 
   # Convert the JSON to the desired format
   local parsed
-  parsed=$(echo "${json_output}" | jq -c '[.[] | {key: .name, value: .state, description: (.description // "")}] | {entries: .}')
+  parsed=$(echo "${json_output}" | jq -c '[.[] | {key: .name, value: .state}] | {entries: .}')
 
   # Ensure the output is not empty
   if [[ -z "${parsed}" || "${parsed}" == "{}" ]]; then
@@ -85,8 +205,15 @@ function parse_az_features() {
 }
 
 # Function to parse feature state and return "true" or "false"
+# Input:
+#   - Feature state string (e.g., "on", "off", "true", "false")
+# Output:
+#   - "true" or "false"
+# Example:
+#   Input: "on"
+#   Output: "true"
 function parse_az_feature_state() {
-  local state="$1"
+  local state="${1}"
 
   # Convert the input state to lowercase for case-insensitive comparison
   local normalized_state
@@ -94,14 +221,14 @@ function parse_az_feature_state() {
 
   # Map valid states to "true" or "false"
   case "${normalized_state}" in
-    true|enabled|on)
+    true|enable|enabled|on)
       echo "true"
       ;;
-    false|disabled|off)
+    false|disable|disabled|off)
       echo "false"
       ;;
     *)
-      print_error "Invalid feature state: ${state}. Valid values are: true, enabled, on, false, disabled, off."
+      print_error "Invalid feature state: ${state}. Valid values are: true, enable, enabled, on, false, disable, disabled, off."
       exit 1
       ;;
   esac

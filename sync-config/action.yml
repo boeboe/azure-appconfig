@@ -63,6 +63,15 @@ runs:
         --content-type '${{ inputs.contentType }}'" >> $GITHUB_ENV
       shell: bash
 
+    - name: Check Prerequisite Binaries
+      run: |
+        if [[ "${{ inputs.format }}" == "yaml" ]]; then
+          check-dependencies.sh az jq yq
+        else
+          check-dependencies.sh az jq
+        fi
+      shell: bash
+
     - name: Validate Inputs
       run: sync-config.sh validate-inputs ${{ env.SCRIPTS_ARGS }}
       shell: bash

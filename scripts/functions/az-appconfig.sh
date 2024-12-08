@@ -90,17 +90,15 @@ function update_current_az_properties() {
 
   print_info "Updating keys in Azure App Configuration..."
   echo "${to_update}" | jq -c '.entries[]' | while read -r entry; do
-    local key value description
+    local key value
     key=$(echo "${entry}" | jq -r '.key')
     value=$(echo "${entry}" | jq -r '.value')
-    description=$(echo "${entry}" | jq -r '.description')
 
     local cmd=("az appconfig kv set")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
     cmd+=("--key '${key}'")
     cmd+=("--value '${value}'")
-    cmd+=("--tags 'description=${description}'")
     [[ "${INPUT_CONTENT_TYPE}" == "keyvaultref" ]] && cmd+=("--content-type 'application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8'")
     [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
@@ -118,17 +116,15 @@ function create_new_az_properties() {
 
   print_info "Creating new keys in Azure App Configuration..."
   echo "${to_create}" | jq -c '.entries[]' | while read -r entry; do
-    local key value description
+    local key value
     key=$(echo "${entry}" | jq -r '.key')
     value=$(echo "${entry}" | jq -r '.value')
-    description=$(echo "${entry}" | jq -r '.description')
 
     local cmd=("az appconfig kv set")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
     cmd+=("--key '${key}'")
     cmd+=("--value '${value}'")
-    cmd+=("--tags 'description=${description}'")
     [[ "${INPUT_CONTENT_TYPE}" == "keyvaultref" ]] && cmd+=("--content-type 'application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8'")
     [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
@@ -146,7 +142,7 @@ function get_current_az_features() {
   cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
   [[ -n "${INPUT_PREFIX:-}" ]] && cmd+=("--feature '${INPUT_PREFIX}*'")
   [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
-  cmd+=("--fields name state description --output json")
+  cmd+=("--fields name state --output json")
 
   local output
   output=$(eval "${cmd[*]}") || {
@@ -199,9 +195,8 @@ function update_current_az_features() {
 
   print_info "Updating feature flags in Azure App Configuration..."
   echo "${to_update}" | jq -c '.entries[]' | while read -r entry; do
-    local feature description enabled
+    local feature enabled
     feature=$(echo "${entry}" | jq -r '.key')
-    description=$(echo "${entry}" | jq -r '.description')
     enabled=$(echo "${entry}" | jq -r '.value')
 
     # Parse the enabled state
@@ -210,12 +205,11 @@ function update_current_az_features() {
       continue
     }
 
-    # Step 1: Create or update the feature flag with optional description
+    # Step 1: Create or update the feature flag
     local cmd=("az appconfig feature set")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
     cmd+=("--feature '${feature}'")
-    [[ -n "${description}" ]] && cmd+=("--description '${description}'")
     [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
     eval "${cmd[*]}" || {
@@ -240,9 +234,8 @@ function create_new_az_features() {
 
   print_info "Creating new feature flags in Azure App Configuration..."
   echo "${to_create}" | jq -c '.entries[]' | while read -r entry; do
-    local feature description enabled
+    local feature enabled
     feature=$(echo "${entry}" | jq -r '.key')
-    description=$(echo "${entry}" | jq -r '.description')
     enabled=$(echo "${entry}" | jq -r '.value')
 
     # Parse the enabled state
@@ -251,12 +244,11 @@ function create_new_az_features() {
       continue
     }
 
-    # Step 1: Create or update the feature flag with optional description
+    # Step 1: Create or update the feature flag
     local cmd=("az appconfig feature set")
     cmd+=("--yes")
     cmd+=("--connection-string '${INPUT_CONNECTION_STRING}'")
     cmd+=("--feature '${feature}'")
-    [[ -n "${description}" ]] && cmd+=("--description '${description}'")
     [[ -n "${INPUT_LABEL:-}" ]] && cmd+=("--label '${INPUT_LABEL}'")
 
     eval "${cmd[*]}" || {

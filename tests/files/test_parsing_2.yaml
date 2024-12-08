@@ -1,0 +1,4 @@
+# Sample test_parsing_2.yaml file for testing empty values
+key1: value1
+key2: 
+key3: value3
