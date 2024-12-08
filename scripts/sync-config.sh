@@ -13,20 +13,20 @@ source "${SCRIPTS_DIR}/functions/az-appconfig.sh"
 
 # Usage message
 function usage() {
-  local usage_message="Usage: $0 [ACTION] [ARGUMENTS]\n"
+  local usage_message="Usage: ${0} [ACTION] [ARGUMENTS]\n"
   usage_message+="Action:\n"
   usage_message+="  validate-inputs\n"
   usage_message+="  execute\n"
   usage_message+="Arguments:\n"
   usage_message+="  --configuration-file <file>\n"
-  usage_message+="  --format <json|yaml|properties>\n"
   usage_message+="  --connection-string <string>\n"
+  usage_message+="  --format <json|yaml|properties>\n"
+  usage_message+="  --content-type <contentType>\n"
+  usage_message+="  --label <label>\n"
+  usage_message+="  --prefix <prefix>\n"
   usage_message+="  --separator <separator>\n"
   usage_message+="  --strict <true|false>\n"
-  usage_message+="  --prefix <prefix>\n"
-  usage_message+="  --label <label>\n"
   usage_message+="  --tags <tags>\n"
-  usage_message+="  --content-type <contentType>\n"
   print_info "$usage_message"
   exit 1
 }
@@ -34,43 +34,7 @@ function usage() {
 # Parse arguments into variables
 function parse_arguments() {
   while [[ $# -gt 0 ]]; do
-    case $1 in
-      --configuration-file)
-        INPUT_CONFIGURATION_FILE="$2"
-        shift 2
-        ;;
-      --format)
-        INPUT_FORMAT="$2"
-        shift 2
-        ;;
-      --connection-string)
-        INPUT_CONNECTION_STRING="$2"
-        shift 2
-        ;;
-      --separator)
-        INPUT_SEPARATOR="$2"
-        shift 2
-        ;;
-      --strict)
-        INPUT_STRICT="$2"
-        shift 2
-        ;;
-      --prefix)
-        INPUT_PREFIX="$2"
-        shift 2
-        ;;
-      --label)
-        INPUT_LABEL="$2"
-        shift 2
-        ;;
-      --tags)
-        INPUT_TAGS="$2"
-        shift 2
-        ;;
-      --content-type)
-        INPUT_CONTENT_TYPE="$2"
-        shift 2
-        ;;
+    case ${1} in
       validate-inputs)
         ACTION="validate_inputs"
         shift
@@ -79,8 +43,44 @@ function parse_arguments() {
         ACTION="execute"
         shift
         ;;
+      --configuration-file)
+        INPUT_CONFIGURATION_FILE="${2}"
+        shift 2
+        ;;
+      --connection-string)
+        INPUT_CONNECTION_STRING="${2}"
+        shift 2
+        ;;
+      --format)
+        INPUT_FORMAT="${2}"
+        shift 2
+        ;;
+      --content-type)
+        INPUT_CONTENT_TYPE="${2}"
+        shift 2
+        ;;
+      --label)
+        INPUT_LABEL="${2}"
+        shift 2
+        ;;
+      --prefix)
+        INPUT_PREFIX="${2}"
+        shift 2
+        ;;
+      --separator)
+        INPUT_SEPARATOR="${2}"
+        shift 2
+        ;;
+      --strict)
+        INPUT_STRICT="${2}"
+        shift 2
+        ;;
+      --tags)
+        INPUT_TAGS="${2}"
+        shift 2
+        ;;
       *)
-        print_error "Unknown argument: $1"
+        print_error "Unknown argument: ${1}"
         usage
         ;;
     esac
@@ -97,14 +97,14 @@ function parse_arguments() {
 function print_env_vars() {
   local env_vars_message="Debugging environment variables for action:\n"
   env_vars_message+="  INPUT_CONFIGURATION_FILE=${INPUT_CONFIGURATION_FILE:-<not set>}\n"
-  env_vars_message+="  INPUT_FORMAT=${INPUT_FORMAT:-<not set>}\n"
   env_vars_message+="  INPUT_CONNECTION_STRING=${INPUT_CONNECTION_STRING:-<not set>}\n"
+  env_vars_message+="  INPUT_FORMAT=${INPUT_FORMAT:-<not set>}\n"
+  env_vars_message+="  INPUT_CONTENT_TYPE=${INPUT_CONTENT_TYPE:-<not set>}\n"
+  env_vars_message+="  INPUT_LABEL=${INPUT_LABEL:-<not set>}\n"
+  env_vars_message+="  INPUT_PREFIX=${INPUT_PREFIX:-<not set>}\n"
   env_vars_message+="  INPUT_SEPARATOR=${INPUT_SEPARATOR:-<not set>}\n"
   env_vars_message+="  INPUT_STRICT=${INPUT_STRICT:-<not set>}\n"
-  env_vars_message+="  INPUT_PREFIX=${INPUT_PREFIX:-<not set>}\n"
-  env_vars_message+="  INPUT_LABEL=${INPUT_LABEL:-<not set>}\n"
   env_vars_message+="  INPUT_TAGS=${INPUT_TAGS:-<not set>}\n"
-  env_vars_message+="  INPUT_CONTENT_TYPE=${INPUT_CONTENT_TYPE:-<not set>}\n"
   print_info "$env_vars_message"
 }
 
@@ -116,9 +116,14 @@ function validate_inputs() {
   # Required fields
   validate_set "INPUT_CONFIGURATION_FILE" "${INPUT_CONFIGURATION_FILE:-}"
   validate_file_exists "INPUT_CONFIGURATION_FILE" "${INPUT_CONFIGURATION_FILE}"
+  validate_set "INPUT_CONNECTION_STRING" "${INPUT_CONNECTION_STRING:-}"
   validate_set "INPUT_FORMAT" "${INPUT_FORMAT:-}"
   validate_enum "INPUT_FORMAT" "${INPUT_FORMAT}" "json" "yaml" "properties"
-  validate_set "INPUT_CONNECTION_STRING" "${INPUT_CONNECTION_STRING:-}"
+
+  # Optional fields
+  validate_enum "INPUT_CONTENT_TYPE" "${INPUT_CONTENT_TYPE:-keyvalue}" "keyvalue" "keyvaultref" "featureflag"
+  [[ -n "${INPUT_STRICT:-}" ]] && validate_boolean "INPUT_STRICT" "${INPUT_STRICT}"
+  [[ -n "${INPUT_TAGS:-}" ]] && validate_json "INPUT_TAGS" "${INPUT_TAGS}"
   validate_set "INPUT_SEPARATOR" "${INPUT_SEPARATOR:-}"
 
   # Conditional handling for INPUT_SEPARATOR
@@ -128,14 +133,6 @@ function validate_inputs() {
   if [[ "${INPUT_FORMAT}" != "properties" && "${INPUT_SEPARATOR}" != "." ]]; then
     print_info "Using separator '${INPUT_SEPARATOR}' for '${INPUT_FORMAT}' format."
   fi
-
-  # Validation for INPUT_CONTENT_TYPE
-  validate_enum "INPUT_CONTENT_TYPE" "${INPUT_CONTENT_TYPE:-keyvalue}" "keyvalue" "keyvaultref" "featureflag"
-
-  # Optional fields
-  [[ -n "${INPUT_STRICT:-}" ]] && validate_boolean "INPUT_STRICT" "${INPUT_STRICT}"
-  [[ -n "${INPUT_TAGS:-}" ]] && validate_json "INPUT_TAGS" "${INPUT_TAGS}"
-
   print_success "All inputs validated successfully."
 }
 
@@ -274,7 +271,7 @@ function main() {
   parse_arguments "$@"
 
   # Perform action
-  case "$ACTION" in
+  case "${ACTION}" in
     validate_inputs)
       validate_inputs
       ;;
@@ -282,7 +279,7 @@ function main() {
       perform_config_sync
       ;;
     *)
-      print_error "Invalid action: $ACTION"
+      print_error "Invalid action: ${ACTION}"
       usage
       ;;
   esac

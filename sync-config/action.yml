@@ -10,6 +10,10 @@ inputs:
   format:
     description: "Format of the configuration file. Valid values are: json, yaml, properties"
     required: true
+  contentType:
+    description: "Content type for the values. Valid values are: 'keyvalue' (default), 'keyvaultref' or 'featureflag'"
+    required: false
+    default: "keyvalue"
   label:
     description: "Label to use when setting the key-value pairs. If not specified, a null label will be used"
     required: false
@@ -27,10 +31,6 @@ inputs:
   tags:
     description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
     required: false
-  contentType:
-    description: "Content type for the values. Valid values are: 'keyvalue' (default), 'keyvaultref' or 'featureflag'"
-    required: false
-    default: "keyvalue"
 
 outputs:
   changes_applied:
@@ -50,14 +50,14 @@ runs:
       run: |
         echo "SCRIPTS_ARGS=\
         --configuration-file '${{ inputs.configurationFile }}' \
-        --format '${{ inputs.format }}' \
         --connection-string '${{ inputs.connectionString }}' \
+        --format '${{ inputs.format }}' \
+        --content-type '${{ inputs.contentType }}' \
+        --label '${{ inputs.label }}' \
+        --prefix '${{ inputs.prefix }}' \
         --separator '${{ inputs.separator }}' \
         --strict '${{ inputs.strict }}' \
-        --prefix '${{ inputs.prefix }}' \
-        --label '${{ inputs.label }}' \
-        --tags '${{ inputs.tags }}' \
-        --content-type '${{ inputs.contentType }}'" >> $GITHUB_ENV
+        --tags '${{ inputs.tags }}'" >> $GITHUB_ENV
       shell: bash
 
     - name: Check Prerequisite Binaries
