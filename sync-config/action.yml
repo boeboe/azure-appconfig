@@ -35,18 +35,20 @@ inputs:
 outputs:
   changes_applied:
     description: "Indicates whether changes were applied during the sync process."
-    value: ${{ steps.sync.outputs.changes_applied }}
+    value: ${{ steps.sync-config.outputs.changes_applied }}
 
 runs:
   using: "composite"
   steps:
     - name: Setup Script and GitHub Path
+      id: setup-path
       run: |
         echo "SCRIPTS_DIR=${{ github.action_path }}/../scripts" >> $GITHUB_ENV
         echo "${{ github.action_path }}/../scripts" >> $GITHUB_PATH
       shell: bash
 
     - name: Setup Script Args
+      id: setup-args
       run: |
         echo "SCRIPTS_ARGS=\
         --configuration-file '${{ inputs.configurationFile }}' \
@@ -61,6 +63,7 @@ runs:
       shell: bash
 
     - name: Check Prerequisite Binaries
+      id: check-binaries
       run: |
         if [[ "${{ inputs.format }}" == "yaml" ]]; then
           check-dependencies.sh az jq yq
@@ -70,10 +73,11 @@ runs:
       shell: bash
 
     - name: Validate Inputs
+      id: validate-inputs
       run: sync-config.sh validate-inputs ${{ env.SCRIPTS_ARGS }}
       shell: bash
 
     - name: Sync with Azure App Configuration
-      id: sync
+      id: sync-config
       run: sync-config.sh execute ${{ env.SCRIPTS_ARGS }}
       shell: bash
