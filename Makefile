@@ -5,15 +5,8 @@
 
 .DEFAULT_GOAL := help
 
-# VM Configurations
-VM_NAME := test-azure-appconfig
-VM_MEMORY := 2G
-VM_DISK := 10G
-VM_CPUS := 2
-VM_MOUNT_PATH := /home/ubuntu/azure-appconfig
-PWD_PATH := $(shell pwd)
-SCRIPTS_DIR := $(VM_MOUNT_PATH)/scripts
-TEST_DIR := $(VM_MOUNT_PATH)/tests
+# Define action directories (one list for all actions)
+ACTIONS := create-snapshot set-keyvalue sync-config
 
 help: ## Display this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -33,7 +26,7 @@ multipass-delete: ## Delete the VM
 multipass-ssh: ## SSH into the VM
 	./multipass.sh ssh
 
+# Generate top-level README
 generate-readme: ## Generate README.md files
-	./readme.sh --input ./create-snapshot/action.yml --output ./create-snapshot/README.md
-	./readme.sh --input ./set-keyvalue/action.yml --output ./set-keyvalue/README.md
-	./readme.sh --input ./sync-config/action.yml --output ./sync-config/README.md
+	./readme.sh general --input $(foreach action,$(ACTIONS),./$(action)/action.yml) --output ./README.md
+	$(foreach action,$(ACTIONS),./readme.sh action --input ./$(action)/action.yml --output ./$(action)/README.md &&) true
