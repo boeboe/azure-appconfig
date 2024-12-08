@@ -14,14 +14,16 @@ source "${SCRIPTS_DIR}/functions/logging.sh"
 FAILED_TESTS=()
 
 # Function to parse a file using the correct parser
-# Input: Path to the file
+# Input: Path to the file, optional separator
 # Output: Parsed JSON result
 function parse_file() {
   local file="$1"
+  local separator="${2:-}"
+
   case "${file}" in
     *.properties) parse_properties_file "${file}" ;;
-    *.yaml) parse_yaml_file "${file}" ;;
-    *.json) parse_json_file "${file}" ;; # Placeholder for JSON parsing
+    *.yaml) parse_yaml_file "${file}" "${separator}" ;;
+    *.json) parse_json_file "${file}" "${separator}" ;;
     *)
       print_error "Unsupported file type: ${file}"
       exit 1
@@ -30,15 +32,16 @@ function parse_file() {
 }
 
 # Function to run a test with expected output
-# Input: Test name, file path, expected output
+# Input: Test name, file path, expected output, optional separator
 function run_test() {
   local test_name="$1"
   local file="$2"
   local expected="$3"
+  local separator="${4:-}"
 
   print_info "Running test: ${test_name} (${file})"
   local result
-  result=$(parse_file "${file}")
+  result=$(parse_file "${file}" "${separator}")
 
   if [[ "${result}" == "${expected}" ]]; then
     print_success "${test_name} passed for ${file}."
@@ -83,6 +86,13 @@ function test_parse_keyvaultref_file() {
   run_test "test_parse_keyvaultref_file" "${file}" "${expected}"
 }
 
+# Tests for nested structures with custom separator
+function test_parse_custom_separator_file() {
+  local file="$1"
+  local expected='{"entries":[{"key":"key1","value":"value1"},{"key":"key2/key2.1","value":"value2.1"},{"key":"key2/key2.2","value":"value2.2"},{"key":"key2/key2.3/key2.3.1","value":"value2.3.1"},{"key":"key2/key2.3/key2.3.2","value":"value2.3.2"},{"key":"key3","value":"value3"}]}'
+  run_test "test_parse_nested_file" "${file}" "${expected}" "/"
+}
+
 # Run all tests
 function run_tests() {
   print_info "Starting unit tests for parser.sh"
@@ -102,7 +112,10 @@ function run_tests() {
                "tests/files/test_parsing_4.yaml"
                "tests/files/test_parsing_5.json"
                "tests/files/test_parsing_5.properties"
-               "tests/files/test_parsing_5.yaml")
+               "tests/files/test_parsing_5.yaml"
+               "tests/files/test_parsing_6.json"
+               "tests/files/test_parsing_6.properties"
+               "tests/files/test_parsing_6.yaml")
 
   # Test each file
   for file in "${files[@]}"; do
@@ -112,6 +125,7 @@ function run_tests() {
       *test_parsing_3*) test_parse_nested_file "${file}" ;;
       *test_parsing_4*) test_parse_with_comments_file "${file}" ;;
       *test_parsing_5*) test_parse_keyvaultref_file "${file}" ;;
+      *test_parsing_6*) test_parse_custom_separator_file "${file}" ;;
     esac
   done
 

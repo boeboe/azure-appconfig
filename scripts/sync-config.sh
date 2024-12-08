@@ -25,7 +25,6 @@ function usage() {
   usage_message+="  --strict <true|false>\n"
   usage_message+="  --prefix <prefix>\n"
   usage_message+="  --label <label>\n"
-  usage_message+="  --depth <depth>\n"
   usage_message+="  --tags <tags>\n"
   usage_message+="  --content-type <contentType>\n"
   print_info "$usage_message"
@@ -62,10 +61,6 @@ function parse_arguments() {
         ;;
       --label)
         INPUT_LABEL="$2"
-        shift 2
-        ;;
-      --depth)
-        INPUT_DEPTH="$2"
         shift 2
         ;;
       --tags)
@@ -108,7 +103,6 @@ function print_env_vars() {
   env_vars_message+="  INPUT_STRICT=${INPUT_STRICT:-<not set>}\n"
   env_vars_message+="  INPUT_PREFIX=${INPUT_PREFIX:-<not set>}\n"
   env_vars_message+="  INPUT_LABEL=${INPUT_LABEL:-<not set>}\n"
-  env_vars_message+="  INPUT_DEPTH=${INPUT_DEPTH:-<not set>}\n"
   env_vars_message+="  INPUT_TAGS=${INPUT_TAGS:-<not set>}\n"
   env_vars_message+="  INPUT_CONTENT_TYPE=${INPUT_CONTENT_TYPE:-<not set>}\n"
   print_info "$env_vars_message"
@@ -125,13 +119,14 @@ function validate_inputs() {
   validate_set "INPUT_FORMAT" "${INPUT_FORMAT:-}"
   validate_enum "INPUT_FORMAT" "${INPUT_FORMAT}" "json" "yaml" "properties"
   validate_set "INPUT_CONNECTION_STRING" "${INPUT_CONNECTION_STRING:-}"
+  validate_set "INPUT_SEPARATOR" "${INPUT_SEPARATOR:-}"
 
-  # Conditional validation for INPUT_SEPARATOR
-  if [[ "${INPUT_FORMAT}" == "json" || "${INPUT_FORMAT}" == "yaml" ]]; then
-    validate_set "INPUT_SEPARATOR" "${INPUT_SEPARATOR:-}"
-  elif [[ "${INPUT_FORMAT}" == "properties" && -n "${INPUT_SEPARATOR:-}" ]]; then
-    print_error "INPUT_SEPARATOR is not valid for 'properties' format."
-    exit 1
+  # Conditional handling for INPUT_SEPARATOR
+  if [[ "${INPUT_FORMAT}" == "properties" && "${INPUT_SEPARATOR}" != "." ]]; then
+    print_warning "INPUT_SEPARATOR is ignored for 'properties' format, but was explicitly set to '${INPUT_SEPARATOR}'."
+  fi
+  if [[ "${INPUT_FORMAT}" != "properties" && "${INPUT_SEPARATOR}" != "." ]]; then
+    print_info "Using separator '${INPUT_SEPARATOR}' for '${INPUT_FORMAT}' format."
   fi
 
   # Validation for INPUT_CONTENT_TYPE
@@ -139,7 +134,6 @@ function validate_inputs() {
 
   # Optional fields
   [[ -n "${INPUT_STRICT:-}" ]] && validate_boolean "INPUT_STRICT" "${INPUT_STRICT}"
-  [[ -n "${INPUT_DEPTH:-}" ]] && validate_positive_integer "INPUT_DEPTH" "${INPUT_DEPTH}"
   [[ -n "${INPUT_TAGS:-}" ]] && validate_json "INPUT_TAGS" "${INPUT_TAGS}"
 
   print_success "All inputs validated successfully."

@@ -11,7 +11,8 @@ inputs:
     description: "Connection string for the App Configuration instance"
     required: true
   separator:
-    description: "Separator used when flattening the configuration file to key-value pairs (only for json and yaml format files)"
+    default: "."
+    description: "Separator used when flattening the configuration file to key-value pairs (only for json and yaml format files, defaults to '.')"
     required: false
   strict:
     description: "Specifies whether to use a strict sync which will make the App Configuration instance exactly match the configuration file (deleting key-values not in the configuration file). Defaults to false"
@@ -23,9 +24,6 @@ inputs:
     description: "Label to use when setting the key-value pairs. If not specified, a null label will be used"
     required: false
     default: '\0'
-  depth:
-    description: "Max depth (positive number) for flattening the configuration file"
-    required: false
   tags:
     description: "Stringified form of a JSON object with the following shape: { [propertyName: string]: string; }"
     required: false
@@ -58,7 +56,6 @@ runs:
         --strict '${{ inputs.strict }}' \
         --prefix '${{ inputs.prefix }}' \
         --label '${{ inputs.label }}' \
-        --depth '${{ inputs.depth }}' \
         --tags '${{ inputs.tags }}' \
         --content-type '${{ inputs.contentType }}'" >> $GITHUB_ENV
       shell: bash

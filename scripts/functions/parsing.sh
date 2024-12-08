@@ -43,18 +43,22 @@ function parse_properties_file() {
   echo "{\"entries\":[${kv_pairs}]}" | jq -c
 }
 
-# Function to parse and flatten JSON content
+# Function to parse and flatten JSON content with a customizable separator
 # Input:
 #   - Raw JSON string
+#   - Separator (optional, defaults to ".")
 # Output:
 #   - Flattened JSON as key-value pairs in "entries" format
 # Example:
 #   Input JSON:
 #     {"key1":"value1","key2":{"key2.1":"value2.1"}}
-#   Output:
+#   Output with default separator:
 #     {"entries":[{"key":"key1","value":"value1"},{"key":"key2.key2.1","value":"value2.1"}]}
-function parse_json_content() {
+#   Output with custom separator ("/"):
+#     {"entries":[{"key":"key1","value":"value1"},{"key":"key2/key2.1","value":"value2.1"}]}
+function flatten_json_content() {
   local json_content="$1"
+  local separator="${2:-.}" # Default to "." if no separator is provided
 
   # Validate JSON content
   if ! echo "${json_content}" | jq empty 2>/dev/null; then
@@ -64,13 +68,13 @@ function parse_json_content() {
 
   # Flatten the JSON structure into key-value pairs
   local flattened
-  flattened=$(echo "${json_content}" | jq -c '
+  flattened=$(echo "${json_content}" | jq -c --arg separator "${separator}" '
     def flatten_object(obj; prefix):
       reduce (obj | to_entries)[] as $item ({}; . +
         if ($item.value | type) == "object" then
-          flatten_object($item.value; (if prefix == "" then "" else (prefix + ".") end) + $item.key)
+          flatten_object($item.value; (if prefix == "" then "" else (prefix + $separator) end) + $item.key)
         else
-          {((if prefix == "" then "" else (prefix + ".") end) + $item.key): ($item.value // "")}
+          {((if prefix == "" then "" else (prefix + $separator) end) + $item.key): ($item.value // "")}
         end
       );
     flatten_object(. ; "")
@@ -93,10 +97,19 @@ function parse_json_content() {
 # Function to parse JSON files
 # Input:
 #   - Path to a JSON file
+#   - Separator (optional, defaults to ".")
 # Output:
 #   - JSON object in "entries" format
+# Example:
+#   Input file:
+#     {"key1":"value1","key2":{"key2.1":"value2.1"}}
+#   Output with default separator:
+#     {"entries":[{"key":"key1","value":"value1"},{"key":"key2.key2.1","value":"value2.1"}]}
+#   Output with custom separator ("/"):
+#     {"entries":[{"key":"key1","value":"value1"},{"key":"key2/key2.1","value":"value2.1"}]}
 function parse_json_file() {
   local file="$1"
+  local separator="${2:-.}" # Default separator is "."
 
   # Check if the file exists and is readable
   if [[ ! -f "${file}" || ! -r "${file}" ]]; then
@@ -104,15 +117,16 @@ function parse_json_file() {
     exit 1
   fi
 
-  # Read the file content and call `parse_json_content`
+  # Read the file content and call `flatten_json_content`
   local json_content
   json_content=$(cat "${file}")
-  parse_json_content "${json_content}"
+  flatten_json_content "${json_content}" "${separator}"
 }
 
 # Function to parse YAML files
 # Input:
 #   - Path to a YAML file
+#   - Separator (optional, defaults to ".")
 # Output:
 #   - JSON object in "entries" format
 # Example:
@@ -120,10 +134,13 @@ function parse_json_file() {
 #     key1: value1
 #     key2:
 #       key2.1: value2.1
-#   Output:
+#   Output with default separator:
 #     {"entries":[{"key":"key1","value":"value1"},{"key":"key2.key2.1","value":"value2.1"}]}
+#   Output with custom separator ("/"):
+#     {"entries":[{"key":"key1","value":"value1"},{"key":"key2/key2.1","value":"value2.1"}]}
 function parse_yaml_file() {
   local file="$1"
+  local separator="${2:-.}" # Default separator is "."
 
   # Check if the file exists and is readable
   if [[ ! -f "${file}" || ! -r "${file}" ]]; then
@@ -131,13 +148,13 @@ function parse_yaml_file() {
     exit 1
   fi
 
-  # Convert YAML to JSON and call `parse_json_content`
+  # Convert YAML to JSON and call `flatten_json_content`
   local json_content
   json_content=$(yq eval -o=json . "${file}") || {
     print_error "Failed to convert YAML to JSON for file: ${file}"
     exit 1
   }
-  parse_json_content "${json_content}"
+  flatten_json_content "${json_content}" "${separator}"
 }
 
 # Function to parse key-value properties from Azure CLI output
