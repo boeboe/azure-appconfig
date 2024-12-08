@@ -32,3 +32,8 @@ multipass-delete: ## Delete the VM
 
 multipass-ssh: ## SSH into the VM
 	./multipass.sh ssh
+
+generate-readme: ## Generate README.md files
+	./readme.sh --input ./create-snapshot/action.yml --output ./create-snapshot/README.md
+	./readme.sh --input ./set-keyvalue/action.yml --output ./set-keyvalue/README.md
+	./readme.sh --input ./sync-config/action.yml --output ./sync-config/README.md
