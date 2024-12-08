@@ -67,7 +67,7 @@ function generate_general_readme() {
             action=$(basename "$(dirname "$input_file")")
             name=$(yq eval '.name' "$input_file")
             description=$(yq eval '.description' "$input_file")
-            printf "| %-18s | %-31s | %-47s |\n" "$action" "$name" "$description"
+            printf "| [%s](./%s/README.md) | %-31s | %-47s |\n" "$action" "$action" "$name" "$description"
         done
     } > "$output_file"
 
