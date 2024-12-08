@@ -1,11 +1,5 @@
 {
-  "secret1": {
-    "uri": "https://my-key-vault.vault.azure.net/secrets/secretvalue1"
-  },
-  "secret2": {
-    "uri": "https://my-key-vault.vault.azure.net/secrets/secretvalue2"
-  },
-  "secret3": {
-    "uri": "https://my-key-vault.vault.azure.net/secrets/secretvalue3"
-  }
+  "secret1": "{\"uri\":\"https://my-key-vault.vault.azure.net/secrets/secretvalue1\"}",
+  "secret2": "{\"uri\":\"https://my-key-vault.vault.azure.net/secrets/secretvalue2\"}",
+  "secret3": "{\"uri\":\"https://my-key-vault.vault.azure.net/secrets/secretvalue3\"}"
 }
