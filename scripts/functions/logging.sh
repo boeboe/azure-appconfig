@@ -33,7 +33,7 @@ function print_warning {
 
 # Print debug messages
 function print_debug {
-  echo -e "${LIGHTBLUEB}[WARNING]${END} ${1}" ;
+  echo -e "${LIGHTBLUEB}[DEBUG]${END} ${1}" ;
 }
 
 # Print success messages
