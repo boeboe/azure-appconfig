@@ -17,8 +17,8 @@ function validate_json_entries() {
   fi
 
   # Validate that each entry in the array contains 'key', 'value', and 'description'
-  if ! echo "${json}" | jq -e '.entries[] | has("key") and has("value") and has("description")' &>/dev/null; then
-    print_error "Invalid JSON format: Each entry must contain 'key', 'value', and 'description'."
+  if ! echo "${json}" | jq -e '.entries[] | has("key") and has("value")' &>/dev/null; then
+    print_error "Invalid JSON format: Each entry must contain 'key' ans 'value'."
     exit 1
   fi
 }
@@ -145,9 +145,7 @@ function add_prefix_to_keys() {
   local prefix="$2"
 
   # Validate the JSON structure
-  print_debug "Validating JSON entries..."
   validate_json_entries "${json}"
-  print_debug "Validated JSON entries result: ${?}"
 
   # If the 'entries' array is empty, return the same structure
   if [[ "$(echo "${json}" | jq '.entries | length')" -eq 0 ]]; then

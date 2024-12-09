@@ -149,7 +149,7 @@ function perform_config_sync() {
     print_error "Failed to parse input file: ${INPUT_CONFIGURATION_FILE}"
     exit 1
   }
-  print_debug "Desired items: ${desired_items}"
+
   if [[ -n "${INPUT_PREFIX:-}" ]]; then
     print_info "Adding prefix '${INPUT_PREFIX}' to desired items."
     if ! desired_items=$(add_prefix_to_keys "${desired_items}" "${INPUT_PREFIX}" 2>&1); then
@@ -159,67 +159,65 @@ function perform_config_sync() {
   fi
   if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
     print_info "Transforming feature states for desired feature flags."
-    desired_items=$(transform_feature_state "${desired_items}") || {
-      print_error "Failed to transform feature states for desired feature flags."
+    if ! desired_items=$(transform_feature_state "${desired_items}" 2>&1); then
+      print_error "Failed to transform feature states for desired feature flags. Details: \n${desired_items}"
       exit 1
-    }
+    fi
   fi
 
   # Step 2: Fetch existing items based on content type
   local existing_items
   if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
     print_info "Fetching current feature flags from Azure App Configuration..."
-    existing_items=$(get_current_az_features) || {
-      print_error "Failed to fetch existing Azure feature flags."
+    if ! existing_items=$(get_current_az_features 2>&1); then
+      print_error "Failed to fetch existing Azure feature flags. Details: \n${existing_items}"
       exit 1
-    }
+    fi
   else
     print_info "Fetching current properties from Azure App Configuration..."
-    existing_items=$(get_current_az_properties) || {
-      print_error "Failed to fetch existing Azure properties."
+    if ! existing_items=$(get_current_az_properties 2>&1); then
+      print_error "Failed to fetch existing Azure properties. Details: \n${existing_items}"
       exit 1
-    }
+    fi
   fi
 
   # Step 3: Handle strict mode
   if [[ "${INPUT_STRICT:-false}" == "true" ]]; then
     local to_delete
-    to_delete=$(get_deleted_keys "${existing_items}" "${desired_items}") || {
-      print_error "Failed to determine items to delete."
+    if ! to_delete=$(get_deleted_keys "${existing_items}" "${desired_items}" 2>&1); then
+      print_error "Failed to determine items to delete. Details: \n${to_delete}"
       exit 1
-    }
+    fi
     if [[ "$(echo "${to_delete}" | jq '.entries | length')" -gt 0 ]]; then
       changes_applied=true
       if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
-        delete_current_az_features "${to_delete}" || {
-          print_error "Failed to delete feature flags in strict mode."
+        if ! output=$(delete_current_az_features "${to_delete}" 2>&1); then
+          print_error "Failed to delete feature flags in strict mode. Details: \n${output}"
           exit 1
-        }
+        fi
       else
-        delete_current_az_properties "${to_delete}" || {
-          print_error "Failed to delete properties in strict mode."
+        if ! output=$(delete_current_az_properties "${to_delete}" 2>&1); then
+          print_error "Failed to delete properties in strict mode. Details: \n${output}"
           exit 1
-        }
+        fi
       fi
     fi
   fi
 
   # Step 4: Compare and sync items
   local common_equal common_changed added
-  common_equal=$(get_common_keys_equal "${existing_items}" "${desired_items}") || {
-    print_error "Failed to determine common equal items."
+  if ! common_equal=$(get_common_keys_equal "${existing_items}" "${desired_items}" 2>&1); then
+    print_error "Failed to determine common equal items. Details: \n${common_equal}"
     exit 1
-  }
-
-  common_changed=$(get_common_keys_changed "${existing_items}" "${desired_items}") || {
-    print_error "Failed to determine common changed items."
+  fi
+  if ! common_changed=$(get_common_keys_changed "${existing_items}" "${desired_items}" 2>&1); then
+    print_error "Failed to determine common changed items. Details: \n${common_changed}"
     exit 1
-  }
-
-  added=$(get_added_keys "${existing_items}" "${desired_items}") || {
-    print_error "Failed to determine added items."
+  fi
+  if ! added=$(get_added_keys "${existing_items}" "${desired_items}" 2>&1); then
+    print_error "Failed to determine common equal items. Details: \n${added}"
     exit 1
-  }
+  fi
 
   # Log untouched items
   if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
@@ -232,25 +230,23 @@ function perform_config_sync() {
   if [[ "$(echo "${common_changed}" | jq '.entries | length')" -gt 0 || "$(echo "${added}" | jq '.entries | length')" -gt 0 ]]; then
     changes_applied=true
     if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
-      update_current_az_features "${common_changed}" || {
-        print_error "Failed to update existing feature flags."
+      if ! output=$(update_current_az_features "${common_changed}" 2>&1); then
+        print_error "Failed to update existing feature flags. Details: ${output}"
         exit 1
-      }
-
-      create_new_az_features "${added}" || {
-        print_error "Failed to create new feature flags."
+      fi
+      if ! output=$(create_new_az_features "${added}" 2>&1); then
+        print_error "Failed to create new feature flags. Details: ${output}"
         exit 1
-      }
+      fi
     else
-      update_current_az_properties "${common_changed}" || {
-        print_error "Failed to update existing properties."
+      if ! output=$(update_current_az_properties "${common_changed}" 2>&1); then
+        print_error "Failed to update existing properties. Details: ${output}"
         exit 1
-      }
-
-      create_new_az_properties "${added}" || {
-        print_error "Failed to create new properties."
+      fi
+      if ! output=$(create_new_az_properties "${added}" 2>&1); then
+        print_error "Failed to create new properties. Details: ${output}"
         exit 1
-      }
+      fi
     fi
   fi
 
