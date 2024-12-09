@@ -189,6 +189,7 @@ function perform_config_sync() {
       exit 1
     fi
     if [[ "$(echo "${to_delete}" | jq '.entries | length')" -gt 0 ]]; then
+      print_info "Deleting items in Azure App Configuration..."
       changes_applied=true
       if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
         if ! output=$(delete_current_az_features "${to_delete}" 2>&1); then
@@ -226,16 +227,13 @@ function perform_config_sync() {
     keep_current_az_properties "${common_equal}"
   fi
 
-  # Update and create items
-  if [[ "$(echo "${common_changed}" | jq '.entries | length')" -gt 0 || "$(echo "${added}" | jq '.entries | length')" -gt 0 ]]; then
+  # Update items
+  if [[ "$(echo "${common_changed}" | jq '.entries | length')" -gt 0 ]]; then
+    print_info "Updating existing items in Azure App Configuration..."
     changes_applied=true
     if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
       if ! output=$(update_current_az_features "${common_changed}" 2>&1); then
         print_error "Failed to update existing feature flags. Details: ${output}"
-        exit 1
-      fi
-      if ! output=$(create_new_az_features "${added}" 2>&1); then
-        print_error "Failed to create new feature flags. Details: ${output}"
         exit 1
       fi
     else
@@ -243,12 +241,26 @@ function perform_config_sync() {
         print_error "Failed to update existing properties. Details: ${output}"
         exit 1
       fi
+    fi
+  fi
+
+  # Create new items
+  if [[ "$(echo "${added}" | jq '.entries | length')" -gt 0 ]]; then
+    print_info "Creating new items in Azure App Configuration..."
+    changes_applied=true
+    if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
+      if ! output=$(create_new_az_features "${added}" 2>&1); then
+        print_error "Failed to create new feature flags. Details: ${output}"
+        exit 1
+      fi
+    else
       if ! output=$(create_new_az_properties "${added}" 2>&1); then
         print_error "Failed to create new properties. Details: ${output}"
         exit 1
       fi
     fi
   fi
+
 
   # Export the changes_applied variable to the GitHub Output
   print_info "Changes applied: ${changes_applied}"
