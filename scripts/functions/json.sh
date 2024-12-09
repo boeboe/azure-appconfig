@@ -145,6 +145,7 @@ function add_prefix_to_keys() {
   local prefix="$2"
 
   # Validate the JSON structure
+  print_debug "Validating JSON entries..."
   validate_json_entries "${json}"
   print_debug "Validated JSON entries result: ${?}"
 
