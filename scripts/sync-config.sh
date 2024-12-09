@@ -152,10 +152,10 @@ function perform_config_sync() {
   print_debug "Desired items: ${desired_items}"
   if [[ -n "${INPUT_PREFIX:-}" ]]; then
     print_info "Adding prefix '${INPUT_PREFIX}' to desired items."
-    desired_items=$(add_prefix_to_keys "${desired_items}" "${INPUT_PREFIX}") || {
-      print_error "Failed to add prefix '${INPUT_PREFIX}' to desired items."
+    if ! desired_items=$(add_prefix_to_keys "${desired_items}" "${INPUT_PREFIX}" 2>&1); then
+      print_error "Failed to add prefix '${INPUT_PREFIX}' to desired items. Details: ${desired_items}"
       exit 1
-    }
+    fi
   fi
   if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
     print_info "Transforming feature states for desired feature flags."
