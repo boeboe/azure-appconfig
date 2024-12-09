@@ -146,6 +146,7 @@ function add_prefix_to_keys() {
 
   # Validate the JSON structure
   validate_json_entries "${json}"
+  print_debug "Validated JSON entries result: ${?}"
 
   # If the 'entries' array is empty, return the same structure
   if [[ "$(echo "${json}" | jq '.entries | length')" -eq 0 ]]; then
