@@ -153,7 +153,7 @@ function perform_config_sync() {
   if [[ -n "${INPUT_PREFIX:-}" ]]; then
     print_info "Adding prefix '${INPUT_PREFIX}' to desired items."
     if ! desired_items=$(add_prefix_to_keys "${desired_items}" "${INPUT_PREFIX}" 2>&1); then
-      print_error "Failed to add prefix '${INPUT_PREFIX}' to desired items. Details: ${desired_items}"
+      print_error "Failed to add prefix '${INPUT_PREFIX}' to desired items. Details: \n${desired_items}"
       exit 1
     fi
   fi
