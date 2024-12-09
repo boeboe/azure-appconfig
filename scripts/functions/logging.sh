@@ -31,6 +31,11 @@ function print_warning {
   echo -e "${YELLOWB}[WARNING]${END} ${1}" ;
 }
 
+# Print debug messages
+function print_debug {
+  echo -e "${LIGHTBLUEB}[WARNING]${END} ${1}" ;
+}
+
 # Print success messages
 function print_success {
   echo -e "${GREENB}[SUCCESS]${END} ${1}" ;
