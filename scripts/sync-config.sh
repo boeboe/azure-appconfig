@@ -149,6 +149,7 @@ function perform_config_sync() {
     print_error "Failed to parse input file: ${INPUT_CONFIGURATION_FILE}"
     exit 1
   }
+  print_debug "Desired items: ${desired_items}"
   if [[ -n "${INPUT_PREFIX:-}" ]]; then
     print_info "Adding prefix '${INPUT_PREFIX}' to desired items."
     desired_items=$(add_prefix_to_keys "${desired_items}" "${INPUT_PREFIX}") || {
