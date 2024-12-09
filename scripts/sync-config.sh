@@ -247,6 +247,7 @@ function perform_config_sync() {
   # Create new items
   if [[ "$(echo "${added}" | jq '.entries | length')" -gt 0 ]]; then
     print_info "Creating new items in Azure App Configuration..."
+    print_debug "New items: ${added}"
     changes_applied=true
     if [[ "${INPUT_CONTENT_TYPE}" == "featureflag" ]]; then
       if ! output=$(create_new_az_features "${added}" 2>&1); then
