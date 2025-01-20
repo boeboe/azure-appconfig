@@ -93,6 +93,13 @@ function test_parse_custom_separator_file() {
   run_test "test_parse_nested_file" "${file}" "${expected}" "/"
 }
 
+# Tests for empty files
+function test_parse_empty_file() {
+  local file="$1"
+  local expected='{"entries":[]}'
+  run_test "test_parse_empty_file" "${file}" "${expected}"
+}
+
 # Run all tests
 function run_tests() {
   print_info "Starting unit tests for parser.sh"
@@ -115,7 +122,10 @@ function run_tests() {
                "tests/files/test_parsing_5.yaml"
                "tests/files/test_parsing_6.json"
                "tests/files/test_parsing_6.properties"
-               "tests/files/test_parsing_6.yaml")
+               "tests/files/test_parsing_6.yaml"
+               "tests/files/test_parsing_7.json"
+               "tests/files/test_parsing_7.properties"
+               "tests/files/test_parsing_7.yaml")
 
   # Test each file
   for file in "${files[@]}"; do
@@ -126,6 +136,7 @@ function run_tests() {
       *test_parsing_4*) test_parse_with_comments_file "${file}" ;;
       *test_parsing_5*) test_parse_keyvaultref_file "${file}" ;;
       *test_parsing_6*) test_parse_custom_separator_file "${file}" ;;
+      *test_parsing_7*) test_parse_empty_file "${file}" ;;
     esac
   done
 
