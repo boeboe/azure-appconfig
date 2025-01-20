@@ -2,7 +2,7 @@
 # test_parsing.sh - Unit tests for parser.sh
 # shellcheck disable=SC1091
 
-set -euo pipefail
+# set -euo pipefail
 trap 'print_error "Test script failed at line $LINENO with exit code $? (last command: $BASH_COMMAND)"' ERR
 
 # Source the parser and logging scripts

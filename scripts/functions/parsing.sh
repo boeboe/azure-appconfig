@@ -33,14 +33,10 @@ function parse_properties_file() {
       printf "{\"key\":\"%s\",\"value\":\"%s\"},", key, value;
     }' | sed 's/,$//')  # Remove trailing comma from JSON array
 
-  # Check if any data was found
-  if [[ -z "${kv_pairs}" ]]; then
-    print_error "No valid entries found in properties file: ${filelocation}"
-    exit 1
-  fi
-
   # Output JSON array of key-value pairs
-  echo "{\"entries\":[${kv_pairs}]}" | jq -c
+  local result
+  result=$(echo "{\"entries\":[${kv_pairs}]}" | jq -c)
+  echo "${result}"
 }
 
 # Function to parse and flatten JSON content with a customizable separator
@@ -59,6 +55,11 @@ function parse_properties_file() {
 function flatten_json_content() {
   local json_content="$1"
   local separator="${2:-.}" # Default to "." if no separator is provided
+
+  # Check if the JSON content is empty
+  if [[ -z "${json_content}" ]]; then
+    json_content="{}"
+  fi
 
   # Validate JSON content
   if ! echo "${json_content}" | jq empty 2>/dev/null; then
@@ -91,7 +92,9 @@ function flatten_json_content() {
   }
 
   # Output final JSON structure
-  echo "{\"entries\":${entries}}" | jq -c
+  local result
+  result=$(echo "{\"entries\":${entries}}" | jq -c)
+  echo "${result}"  
 }
 
 # Function to parse JSON files
@@ -120,7 +123,11 @@ function parse_json_file() {
   # Read the file content and call `flatten_json_content`
   local json_content
   json_content=$(cat "${file}")
-  flatten_json_content "${json_content}" "${separator}"
+
+  # Flatten the JSON content and return the result
+  local result
+  result=$(flatten_json_content "${json_content}" "${separator}")
+  echo "${result}"
 }
 
 # Function to parse YAML files
@@ -154,7 +161,16 @@ function parse_yaml_file() {
     print_error "Failed to convert YAML to JSON for file: ${file}"
     exit 1
   }
-  flatten_json_content "${json_content}" "${separator}"
+
+  # Replace 'null' with '{}' (empty JSON object)
+  if [[ "${json_content}" == "null" ]]; then
+    json_content="{}"
+  fi
+
+  # Flatten the JSON content and return the result
+  local result
+  result=$(flatten_json_content "${json_content}" "${separator}")
+  echo "${result}"  
 }
 
 # Function to parse key-value properties from Azure CLI output
